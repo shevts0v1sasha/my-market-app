@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Items</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div>
+
+        <div class="items-row" th:each="item : ${itemsPage.items()}" style="display: flex">
+            <div th:each="i : ${item}" th:if="${i.id() > -1}">
+                <img class="item-img" th:src="${i.imgPath()}"></img>
+                <p class="item-title" th:text="${i.title()}"></p>
+                <div class="item-price" th:text="${i.price() + ' руб.'} "></div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,22 @@
+.items-row {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.item-img {
+    max-width: 150px;
+    max-height: 150px;
+}
+
+.item-title {
+    font-weight: bold;
+}
+
+.item-price {
+    color: white;
+    background-color: forestgreen;
+    padding: 5px;
+    border-radius: 8px;
+    width: fit-content;
+}
