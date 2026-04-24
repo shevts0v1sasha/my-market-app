@@ -1,0 +1,6 @@
+INSERT INTO items(title, description, img_path, price, count)
+VALUES ('1', '1', '1', 5, 1),
+       ('2', '2', '2', 4, 2),
+       ('3', '3', '3', 3, 3),
+       ('4', '4', '4', 2, 4),
+       ('5', '5', '5', 1, 5);

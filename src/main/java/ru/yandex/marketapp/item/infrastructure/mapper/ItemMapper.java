@@ -19,6 +19,6 @@ public class ItemMapper {
     }
 
     public ItemDto createEmptyDto() {
-        return new ItemDto(-1, null, null, null, 0, 0);
+        return new ItemDto(-1, "", "", null, 0, 0);
     }
 }

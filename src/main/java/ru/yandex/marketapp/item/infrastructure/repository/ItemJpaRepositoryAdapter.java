@@ -17,7 +17,6 @@ import ru.yandex.marketapp.item.infrastructure.jpa.ItemJpaEntity;
 
 import java.util.List;
 
-
 @Repository
 @RequiredArgsConstructor
 public class ItemJpaRepositoryAdapter implements ItemRepository {
