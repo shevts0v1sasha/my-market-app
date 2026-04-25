@@ -7,16 +7,97 @@
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-    <div>
+<div class="page">
+    <header class="header">
+        <h2 class="brand">Интернет магазин котов</h2>
+        <nav class="nav">
+            <a th:href="@{/orders}">Заказы</a>
+            <a th:href="@{/cart/items}">Корзина</a>
+        </nav>
+    </header>
 
-        <div class="items-row" th:each="item : ${itemsPage.items()}" style="display: flex">
-            <div th:each="i : ${item}" th:if="${i.id() > -1}">
-                <img class="item-img" th:src="${i.imgPath()}"></img>
-                <p class="item-title" th:text="${i.title()}"></p>
-                <div class="item-price" th:text="${i.price() + ' руб.'} "></div>
+    <form class="card toolbar" th:action="@{/items}" method="get">
+        <label>
+            Поиск
+            <input type="text" name="search" th:value="${search}" placeholder="Название или описание"/>
+        </label>
+        <label>
+            Сортировка
+            <select name="sort">
+                <option th:value="NO" th:selected="${sort.name() == 'NO'}">Без сортировки</option>
+                <option th:value="ALPHA" th:selected="${sort.name() == 'ALPHA'}">По названию</option>
+                <option th:value="PRICE" th:selected="${sort.name() == 'PRICE'}">По цене</option>
+            </select>
+        </label>
+        <label>
+            На странице
+            <select name="pageSize">
+                <option th:each="size : ${T(java.util.List).of(2,5,10,20,50,100)}"
+                        th:value="${size}"
+                        th:text="${size}"
+                        th:selected="${paging.pageSize() == size}">
+                </option>
+            </select>
+        </label>
+        <input type="hidden" name="pageNumber" value="1"/>
+        <button type="submit">Найти</button>
+    </form>
+
+    <div class="items-grid">
+        <div class="items-row" th:each="row : ${items}">
+            <div th:each="i : ${row}">
+                <div class="card item-card" th:if="${i.id() > -1}">
+                    <a th:href="@{/items/{id}(id=${i.id()})}">
+                        <img class="item-img" th:src="${i.imgPath()}" alt="item image"/>
+                    </a>
+                    <p class="item-title" th:text="${i.title()}"></p>
+                    <p class="item-description" th:text="${i.description()}"></p>
+                    <div class="item-price" th:text="${i.price() + ' руб.'}"></div>
+                    <p class="item-count" th:text="${'В корзине: ' + i.count()}"></p>
+                    <div class="actions">
+                        <form th:action="@{/items}" method="post">
+                            <input type="hidden" name="id" th:value="${i.id()}"/>
+                            <input type="hidden" name="search" th:value="${search}"/>
+                            <input type="hidden" name="sort" th:value="${sort}"/>
+                            <input type="hidden" name="pageNumber" th:value="${paging.pageNumber()}"/>
+                            <input type="hidden" name="pageSize" th:value="${paging.pageSize()}"/>
+                            <input type="hidden" name="action" value="MINUS"/>
+                            <button type="submit">-</button>
+                        </form>
+                        <form th:action="@{/items}" method="post">
+                            <input type="hidden" name="id" th:value="${i.id()}"/>
+                            <input type="hidden" name="search" th:value="${search}"/>
+                            <input type="hidden" name="sort" th:value="${sort}"/>
+                            <input type="hidden" name="pageNumber" th:value="${paging.pageNumber()}"/>
+                            <input type="hidden" name="pageSize" th:value="${paging.pageSize()}"/>
+                            <input type="hidden" name="action" value="PLUS"/>
+                            <button type="submit">+</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="item-placeholder" th:if="${i.id() == -1}"></div>
             </div>
         </div>
-
     </div>
+
+    <div class="pagination">
+        <form th:if="${paging.hasPrevious()}" th:action="@{/items}" method="get">
+            <input type="hidden" name="search" th:value="${search}"/>
+            <input type="hidden" name="sort" th:value="${sort}"/>
+            <input type="hidden" name="pageSize" th:value="${paging.pageSize()}"/>
+            <input type="hidden" name="pageNumber" th:value="${paging.pageNumber() - 1}"/>
+            <button type="submit">Назад</button>
+        </form>
+        <span class="page-number" th:text="${'Страница ' + paging.pageNumber()}"></span>
+        <form th:if="${paging.hasNext()}" th:action="@{/items}" method="get">
+            <input type="hidden" name="search" th:value="${search}"/>
+            <input type="hidden" name="sort" th:value="${sort}"/>
+            <input type="hidden" name="pageSize" th:value="${paging.pageSize()}"/>
+            <input type="hidden" name="pageNumber" th:value="${paging.pageNumber() + 1}"/>
+            <button type="submit">Вперед</button>
+        </form>
+    </div>
+</div>
+
 </body>
 </html>

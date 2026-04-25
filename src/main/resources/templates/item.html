@@ -4,8 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Item</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-item
+<div class="page">
+    <header class="header">
+        <h2 class="brand">Карточка товара</h2>
+        <nav class="nav">
+            <a th:href="@{/items}">Витрина</a>
+            <a th:href="@{/cart/items}">Корзина</a>
+            <a th:href="@{/orders}">Заказы</a>
+        </nav>
+    </header>
+
+    <div class="card single-card">
+        <img class="item-img" th:src="${item.imgPath()}" alt="item image"/>
+        <h3 class="item-title" th:text="${item.title()}"></h3>
+        <p class="item-description" th:text="${item.description()}"></p>
+        <p class="item-price" th:text="${item.price() + ' руб.'}"></p>
+        <p class="item-count" th:text="${'В корзине: ' + item.count()}"></p>
+
+        <div class="actions">
+            <form th:action="@{/items/{id}(id=${item.id()})}" method="post">
+                <input type="hidden" name="action" value="MINUS"/>
+                <button type="submit">-</button>
+            </form>
+            <form th:action="@{/items/{id}(id=${item.id()})}" method="post">
+                <input type="hidden" name="action" value="PLUS"/>
+                <button type="submit">+</button>
+            </form>
+        </div>
+    </div>
+</div>
 </body>
 </html>

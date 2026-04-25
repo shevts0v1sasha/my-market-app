@@ -37,11 +37,9 @@ public class ItemQueryServiceTest {
     @MethodSource("argumentsStream")
     void givenSortAndExpectedIds_whenQueryServiceFind_thenIdsInCorrectOrder(Sort sort, List<String> ids) {
         // given
-        SearchItemsRequest request = SearchItemsRequest.builder()
-                .pageSize(6)
-                .pageNumber(1)
-                .sort(sort)
-                .build();
+        SearchItemsRequest request = new SearchItemsRequest(
+                "", sort, 1, 6
+        );
 
         // when
         SearchItemsResponse searchItemsResponse = itemQueryService.find(request);

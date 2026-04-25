@@ -8,13 +8,17 @@ import ru.yandex.marketapp.item.infrastructure.api.dto.ItemDto;
 public class ItemMapper {
 
     public ItemDto map(Item item) {
+        return map(item, item.getCount());
+    }
+
+    public ItemDto map(Item item, int count) {
         return new ItemDto(
                 item.getId().id(),
                 item.getTitle(),
                 item.getDescription(),
                 item.getImgPath(),
                 item.getPrice().price(),
-                item.getCount()
+                count
         );
     }
 
