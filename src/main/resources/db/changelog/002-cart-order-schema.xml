@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="2" author="shevtsovdev">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <not>
+                    <tableExists tableName="carts"/>
+                </not>
+                <dbms type="postgresql"/>
+            </and>
+        </preConditions>
+
+        <createTable tableName="carts">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" primaryKeyName="pk_carts" nullable="false"/>
+            </column>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="carts"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="3" author="shevtsovdev">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <not>
+                    <tableExists tableName="cart_items"/>
+                </not>
+                <dbms type="postgresql"/>
+            </and>
+        </preConditions>
+
+        <createTable tableName="cart_items">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_cart_items" nullable="false"/>
+            </column>
+            <column name="item_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="amount" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cart_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="cart_items"
+                                 baseColumnNames="cart_id"
+                                 constraintName="fk_cart_items_cart"
+                                 referencedTableName="carts"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="cart_items"
+                                 baseColumnNames="item_id"
+                                 constraintName="fk_cart_items_item"
+                                 referencedTableName="items"
+                                 referencedColumnNames="id"/>
+        <addUniqueConstraint tableName="cart_items"
+                             columnNames="cart_id, item_id"
+                             constraintName="uk_cart_items_cart_item"/>
+        <createIndex tableName="cart_items" indexName="idx_cart_items_cart_id">
+            <column name="cart_id"/>
+        </createIndex>
+        <createIndex tableName="cart_items" indexName="idx_cart_items_item_id">
+            <column name="item_id"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="cart_items"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="4" author="shevtsovdev">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <not>
+                    <tableExists tableName="shop_orders"/>
+                </not>
+                <dbms type="postgresql"/>
+            </and>
+        </preConditions>
+
+        <createTable tableName="shop_orders">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_shop_orders" nullable="false"/>
+            </column>
+            <column name="total_sum" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="shop_orders"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="5" author="shevtsovdev">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <not>
+                    <tableExists tableName="shop_order_items"/>
+                </not>
+                <dbms type="postgresql"/>
+            </and>
+        </preConditions>
+
+        <createTable tableName="shop_order_items">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_shop_order_items" nullable="false"/>
+            </column>
+            <column name="item_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="title" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="price" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="count" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="order_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="shop_order_items"
+                                 baseColumnNames="order_id"
+                                 constraintName="fk_shop_order_items_order"
+                                 referencedTableName="shop_orders"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <createIndex tableName="shop_order_items" indexName="idx_shop_order_items_order_id">
+            <column name="order_id"/>
+        </createIndex>
+        <createIndex tableName="shop_order_items" indexName="idx_shop_order_items_item_id">
+            <column name="item_id"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="shop_order_items"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

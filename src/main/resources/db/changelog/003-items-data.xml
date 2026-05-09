@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="6" author="shevtsovdev" context="dev">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*)
+                                         FROM items</sqlCheck>
+        </preConditions>
+
+        <insert tableName="items">
+            <column name="title" value="Кот на кактусе"/>
+            <column name="description" value="Красивый кот сидит на кактусе на фоне синего неба"/>
+            <column name="img_path" value="/cat.jpg"/>
+            <column name="price" valueNumeric="500"/>
+            <column name="count" valueNumeric="0"/>
+        </insert>
+        <insert tableName="items">
+            <column name="title" value="Кот в пустыне"/>
+            <column name="description" value="Черный элегантный кот сидит в пустыне на фоне пирамиды"/>
+            <column name="img_path" value="/cat_in_desert.jpg"/>
+            <column name="price" valueNumeric="1500"/>
+            <column name="count" valueNumeric="0"/>
+        </insert>
+        <insert tableName="items">
+            <column name="title" value="Король"/>
+            <column name="description" value="Элегантный представитель королевских кровей"/>
+            <column name="img_path" value="/king.jpg"/>
+            <column name="price" valueNumeric="3000"/>
+            <column name="count" valueNumeric="0"/>
+        </insert>
+        <insert tableName="items">
+            <column name="title" value="Древолаз"/>
+            <column name="description" value="Предпочитает спать на дереве"/>
+            <column name="img_path" value="/on_the_tree.png"/>
+            <column name="price" valueNumeric="2800"/>
+            <column name="count" valueNumeric="0"/>
+        </insert>
+        <insert tableName="items">
+            <column name="title" value="Панк"/>
+            <column name="description" value="С бурлящей кровью"/>
+            <column name="img_path" value="/pank.jpg"/>
+            <column name="price" valueNumeric="300"/>
+            <column name="count" valueNumeric="0"/>
+        </insert>
+        <insert tableName="items">
+            <column name="title" value="Самурай"/>
+            <column name="description" value="Прямиком из японской провинции"/>
+            <column name="img_path" value="/samurai.jpg"/>
+            <column name="price" valueNumeric="4000"/>
+            <column name="count" valueNumeric="0"/>
+        </insert>
+        <insert tableName="items">
+            <column name="title" value="Курильщик"/>
+            <column name="description" value="Очень красивый кот, правда с вредной привычкой"/>
+            <column name="img_path" value="/smoker.jpg"/>
+            <column name="price" valueNumeric="1750"/>
+            <column name="count" valueNumeric="0"/>
+        </insert>
+        <insert tableName="items">
+            <column name="title" value="Кобрик"/>
+            <column name="description" value="Помесь домашнего мурзика и индийской кобры"/>
+            <column name="img_path" value="/kobrik.jpg"/>
+            <column name="price" valueNumeric="900"/>
+            <column name="count" valueNumeric="0"/>
+        </insert>
+        <insert tableName="items">
+            <column name="title" value="Острый козырек"/>
+            <column name="description" value="Интеллегент со своими принципами"/>
+            <column name="img_path" value="/intelligent.jpg"/>
+            <column name="price" valueNumeric="2500"/>
+            <column name="count" valueNumeric="0"/>
+        </insert>
+
+        <rollback>
+            <delete tableName="items">
+                <where>title IN ('Кот на кактусе', 'Кот в пустыне', 'Король', 'Древолаз', 'Панк', 'Самурай',
+                    'Курильщик', 'Кобрик', 'Острый козырек')
+                </where>
+            </delete>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

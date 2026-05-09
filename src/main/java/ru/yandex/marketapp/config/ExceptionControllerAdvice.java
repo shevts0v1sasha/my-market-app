@@ -6,6 +6,7 @@ import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.marketapp.common.application.BusinessRuleException;
 import ru.yandex.marketapp.common.application.NotFoundException;
 
@@ -46,5 +47,12 @@ public class ExceptionControllerAdvice {
     public ResponseEntity<ValidationExceptionDto> handle(BusinessRuleException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ValidationExceptionDto(e.getMessage(), List.of(e.getMessage())));
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ValidationExceptionDto> handle(ResponseStatusException e) {
+        String message = e.getReason() == null ? e.getStatusCode().toString() : e.getReason();
+        return ResponseEntity.status(e.getStatusCode())
+                .body(new ValidationExceptionDto(message, List.of(message)));
     }
 }
