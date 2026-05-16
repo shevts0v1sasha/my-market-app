@@ -1,6 +1,8 @@
 package ru.yandex.marketapp.cart.domain;
 
+import reactor.core.publisher.Mono;
+
 public interface CartRepository {
-    Cart getCurrentCart();
-    Cart save(Cart cart);
+    Mono<Cart> getCurrentCart();
+    Mono<Cart> save(Cart cart);
 }

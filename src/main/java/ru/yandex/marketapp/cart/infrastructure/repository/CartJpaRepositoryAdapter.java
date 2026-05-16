@@ -1,8 +1,10 @@
 package ru.yandex.marketapp.cart.infrastructure.repository;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
 import ru.yandex.marketapp.cart.domain.Cart;
 import ru.yandex.marketapp.cart.domain.CartId;
 import ru.yandex.marketapp.cart.domain.CartItem;
@@ -19,32 +21,35 @@ public class CartJpaRepositoryAdapter implements CartRepository {
     private static final long CURRENT_CART_ID = 1L;
 
     private final CartJpaRepository cartJpaRepository;
+    private final CartItemJpaRepository cartItemJpaRepository;
+    private final DatabaseClient databaseClient;
 
     @Override
     @Transactional(readOnly = true)
-    public Cart getCurrentCart() {
+    public Mono<Cart> getCurrentCart() {
         return cartJpaRepository.findById(CURRENT_CART_ID)
-                .map(this::toDomain)
-                .orElseGet(() -> new Cart(new CartId(CURRENT_CART_ID), List.of()));
+                .flatMap(entity -> cartItemJpaRepository.findByCartId(entity.getId())
+                        .map(i -> new CartItem(i.getItemId(), i.getAmount()))
+                        .collectList()
+                        .map(items -> new Cart(new CartId(entity.getId()), items)))
+                .switchIfEmpty(Mono.just(new Cart(new CartId(CURRENT_CART_ID), List.of())));
     }
 
     @Override
     @Transactional
-    public Cart save(Cart cart) {
+    public Mono<Cart> save(Cart cart) {
         CartJpaEntity entity = new CartJpaEntity(CURRENT_CART_ID);
         List<CartItemJpaEntity> items = cart.getItems().stream()
                 .map(this::toJpa)
                 .toList();
-        items.forEach(i -> i.setCart(entity));
-        entity.setItems(items);
-        return toDomain(cartJpaRepository.save(entity));
-    }
+        items.forEach(i -> i.setCartId(CURRENT_CART_ID));
 
-    private Cart toDomain(CartJpaEntity entity) {
-        List<CartItem> items = entity.getItems().stream()
-                .map(i -> new CartItem(i.getItemId(), i.getAmount()))
-                .toList();
-        return new Cart(new CartId(entity.getId()), items);
+        return databaseClient.sql("INSERT INTO carts(id) VALUES(:id) ON CONFLICT (id) DO NOTHING")
+                .bind("id", entity.getId())
+                .then()
+                .then(cartItemJpaRepository.deleteByCartId(CURRENT_CART_ID))
+                .thenMany(cartItemJpaRepository.saveAll(items))
+                .then(Mono.just(cart));
     }
 
     private CartItemJpaEntity toJpa(CartItem item) {
@@ -52,7 +57,7 @@ public class CartJpaRepositoryAdapter implements CartRepository {
                 null,
                 item.getItemId(),
                 item.getAmount(),
-                null
+                CURRENT_CART_ID
         );
     }
 }

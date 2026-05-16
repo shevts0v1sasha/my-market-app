@@ -2,6 +2,9 @@ package ru.yandex.marketapp.order.infrastructure.repository;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import ru.yandex.marketapp.order.domain.Order;
 import ru.yandex.marketapp.order.domain.OrderId;
 import ru.yandex.marketapp.order.domain.OrderItem;
@@ -10,53 +13,75 @@ import ru.yandex.marketapp.order.infrastructure.jpa.OrderItemJpaEntity;
 import ru.yandex.marketapp.order.infrastructure.jpa.OrderJpaEntity;
 
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
 public class OrderJpaRepositoryAdapter implements OrderRepository {
 
     private final OrderJpaRepository orderJpaRepository;
+    private final OrderItemJpaRepository orderItemJpaRepository;
 
     @Override
-    public Order save(Order order) {
+    @Transactional
+    public Mono<Order> save(Order order) {
         OrderJpaEntity entity = new OrderJpaEntity();
         entity.setTotalSum(order.totalSum());
-        List<OrderItemJpaEntity> items = order.items().stream()
-                .map(this::toJpaWithoutOrder)
-                .toList();
-        items.forEach(item -> item.setOrder(entity));
-        entity.setItems(items);
 
-        return toDomain(orderJpaRepository.save(entity));
+        return orderJpaRepository.save(entity)
+                .flatMap(savedOrder -> {
+                    List<OrderItemJpaEntity> items = order.items().stream()
+                            .map(item -> toJpa(item, savedOrder.getId()))
+                            .toList();
+                    return orderItemJpaRepository.saveAll(items)
+                            .collectList()
+                            .map(savedItems -> toDomain(savedOrder, savedItems));
+                });
     }
 
     @Override
-    public List<Order> findAll() {
-        return orderJpaRepository.findAll().stream()
-                .map(this::toDomain)
-                .toList();
+    @Transactional(readOnly = true)
+    public Flux<Order> findAll() {
+        return orderJpaRepository.findAll()
+                .collectList()
+                .flatMapMany(orders -> {
+                    if (orders.isEmpty()) {
+                        return Flux.empty();
+                    }
+                    List<Long> orderIds = orders.stream()
+                            .map(OrderJpaEntity::getId)
+                            .toList();
+                    return orderItemJpaRepository.findByOrderIdIn(orderIds)
+                            .collectMultimap(OrderItemJpaEntity::getOrderId)
+                            .flatMapMany(itemsByOrderId -> Flux.fromIterable(orders)
+                                    .map(order -> toDomain(
+                                            order,
+                                            List.copyOf(itemsByOrderId.getOrDefault(order.getId(), List.of()))
+                                    )));
+                });
     }
 
     @Override
-    public Optional<Order> findById(long id) {
+    @Transactional(readOnly = true)
+    public Mono<Order> findById(long id) {
         return orderJpaRepository.findById(id)
-                .map(this::toDomain);
+                .flatMap(order -> orderItemJpaRepository.findByOrderId(id)
+                        .collectList()
+                        .map(items -> toDomain(order, items)));
     }
 
-    private OrderItemJpaEntity toJpaWithoutOrder(OrderItem item) {
+    private OrderItemJpaEntity toJpa(OrderItem item, long orderId) {
         return new OrderItemJpaEntity(
                 null,
                 item.itemId(),
                 item.title(),
                 item.price(),
                 item.count(),
-                null
+                orderId
         );
     }
 
-    private Order toDomain(OrderJpaEntity entity) {
-        List<OrderItem> items = entity.getItems().stream()
+    private Order toDomain(OrderJpaEntity entity, List<OrderItemJpaEntity> orderItems) {
+        List<OrderItem> items = orderItems.stream()
                 .map(item -> new OrderItem(
                         item.getItemId(),
                         item.getTitle(),

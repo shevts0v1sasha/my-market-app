@@ -2,10 +2,10 @@ package ru.yandex.marketapp.config;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.marketapp.common.application.BusinessRuleException;
 import ru.yandex.marketapp.common.application.NotFoundException;
@@ -15,8 +15,8 @@ import java.util.List;
 @ControllerAdvice
 public class ExceptionControllerAdvice {
 
-    @ExceptionHandler(BindException.class)
-    public ResponseEntity<ValidationExceptionDto> handle(BindException e) {
+    @ExceptionHandler(WebExchangeBindException.class)
+    public ResponseEntity<ValidationExceptionDto> handle(WebExchangeBindException e) {
         List<String> errors = e.getBindingResult().getAllErrors().stream()
                 .map(error -> {
                     if (error instanceof FieldError fieldError) {

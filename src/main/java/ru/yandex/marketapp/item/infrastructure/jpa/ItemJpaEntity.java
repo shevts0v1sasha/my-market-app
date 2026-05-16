@@ -1,17 +1,13 @@
 package ru.yandex.marketapp.item.infrastructure.jpa;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
-@Entity
 @Table(name = "items")
 @Getter
 @Setter
@@ -19,21 +15,20 @@ import lombok.Setter;
 @NoArgsConstructor
 public class ItemJpaEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "title")
+    @Column("title")
     private String title;
 
-    @Column(name = "description")
+    @Column("description")
     private String description;
 
-    @Column(name = "img_path")
+    @Column("img_path")
     private String imgPath;
 
-    @Column(name = "price")
+    @Column("price")
     private long price;
 
-    @Column(name = "count")
+    @Column("count")
     private int count;
 }

@@ -1,11 +1,10 @@
 package ru.yandex.marketapp.item.infrastructure.repository;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import ru.yandex.marketapp.item.domain.Item;
 import ru.yandex.marketapp.item.domain.ItemId;
 import ru.yandex.marketapp.item.domain.ItemRepository;
@@ -15,71 +14,94 @@ import ru.yandex.marketapp.item.domain.Paging;
 import ru.yandex.marketapp.item.domain.Price;
 import ru.yandex.marketapp.item.infrastructure.jpa.ItemJpaEntity;
 
-import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
 public class ItemJpaRepositoryAdapter implements ItemRepository {
 
     private final ItemJpaRepository jpaRepository;
+    private final DatabaseClient databaseClient;
 
     @Override
-    public ItemsPage find(ItemsSearchContext context) {
-        Sort sorting = switch (context.sort()) {
-            case ALPHA -> Sort.by("title").ascending();
-            case PRICE -> Sort.by("price").ascending();
-            case NO -> Sort.unsorted();
+    public Mono<ItemsPage> find(ItemsSearchContext context) {
+        String where = context.search().isBlank()
+                ? ""
+                : "WHERE lower(title) LIKE :search OR lower(description) LIKE :search";
+        String orderBy = switch (context.sort()) {
+            case ALPHA -> "title ASC";
+            case PRICE -> "price ASC";
+            case NO -> "id ASC";
         };
+        int offset = (context.pageNumber() - 1) * context.pageSize();
 
-        Pageable pageable = PageRequest.of(context.pageNumber() - 1, context.pageSize(), sorting);
+        var itemsSpec = databaseClient.sql("""
+                        SELECT id, title, description, img_path, price, count
+                        FROM items
+                        %s
+                        ORDER BY %s
+                        LIMIT :limit OFFSET :offset
+                        """.formatted(where, orderBy))
+                .bind("limit", context.pageSize())
+                .bind("offset", offset);
 
-        Page<ItemJpaEntity> result = context.search().isBlank() ?
-                jpaRepository.findAll(pageable) :
-                jpaRepository.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+        var countSpec = databaseClient.sql("SELECT COUNT(*) AS total FROM items %s".formatted(where));
+
+        if (!context.search().isBlank()) {
+            String search = "%" + context.search().toLowerCase() + "%";
+            itemsSpec = itemsSpec.bind("search", search);
+            countSpec = countSpec.bind("search", search);
+        }
+
+        Mono<List<Item>> items = itemsSpec.map((row, metadata) -> toDomainEntity(new ItemJpaEntity(
+                        row.get("id", Long.class),
+                        row.get("title", String.class),
+                        row.get("description", String.class),
+                        row.get("img_path", String.class),
+                        row.get("price", Long.class),
+                        row.get("count", Integer.class)
+                )))
+                .all()
+                .collectList();
+        Mono<Long> total = countSpec.map((row, metadata) -> row.get("total", Long.class))
+                .one()
+                .defaultIfEmpty(0L);
+
+        return Mono.zip(items, total)
+                .map(result -> new ItemsPage(
+                        result.getT1(),
                         context.search(),
-                        context.search(),
-                        pageable
-                );
-
-        List<Item> items = result.get()
-                .map(this::toDomainEntity)
-                .toList();
-
-        return new ItemsPage(
-                items,
-                context.search(),
-                context.sort(),
-                new Paging(
-                        result.getSize(),
-                        result.getNumber() + 1,
-                        result.hasPrevious(),
-                        result.hasNext()
+                        context.sort(),
+                        new Paging(
+                                context.pageSize(),
+                                context.pageNumber(),
+                                context.pageNumber() > 1,
+                                offset + context.pageSize() < result.getT2()
+                        )
                 ));
     }
 
     @Override
-    public Optional<Item> findById(long id) {
+    public Mono<Item> findById(long id) {
         return jpaRepository.findById(id)
                 .map(this::toDomainEntity);
     }
 
     @Override
-    public List<Item> findByIds(List<Long> ids) {
+    public Flux<Item> findByIds(List<Long> ids) {
         if (ids.isEmpty()) {
-            return List.of();
+            return Flux.empty();
         }
-        return jpaRepository.findByIdIn(ids).stream()
+        return jpaRepository.findByIdIn(ids)
                 .map(this::toDomainEntity)
-                .sorted(Comparator.comparingLong(left -> left.getId().id()))
-                .toList();
+                .sort((left, right) -> Long.compare(left.getId().id(), right.getId().id()));
     }
 
     @Override
-    public Item save(Item item) {
+    public Mono<Item> save(Item item) {
         ItemJpaEntity jpaEntity = toJpaEntity(item);
-        return toDomainEntity(jpaRepository.save(jpaEntity));
+        return jpaRepository.save(jpaEntity)
+                .map(this::toDomainEntity);
     }
 
     private Item toDomainEntity(ItemJpaEntity jpaEntity) {

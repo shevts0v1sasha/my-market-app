@@ -1,14 +1,16 @@
 package ru.yandex.marketapp.item.domain;
 
-import java.util.Optional;
 import java.util.List;
 
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 public interface ItemRepository {
-    ItemsPage find(ItemsSearchContext context);
+    Mono<ItemsPage> find(ItemsSearchContext context);
 
-    Optional<Item> findById(long id);
+    Mono<Item> findById(long id);
 
-    List<Item> findByIds(List<Long> ids);
+    Flux<Item> findByIds(List<Long> ids);
 
-    Item save(Item item);
+    Mono<Item> save(Item item);
 }
