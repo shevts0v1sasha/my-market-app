@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cart</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="page">
+    <header class="header">
+        <h2 class="brand">Корзина</h2>
+        <nav class="nav">
+            <a th:href="@{/items}">Витрина</a>
+            <a th:href="@{/orders}">Заказы</a>
+        </nav>
+    </header>
+
+    <div class="card empty" th:if="${items.isEmpty()}">
+        Корзина пуста
+    </div>
+
+    <div class="list" th:if="${!items.isEmpty()}">
+        <div class="card list-card" th:each="item : ${items}">
+            <p class="item-title" th:text="${item.title()}"></p>
+            <p th:text="${item.price() + ' руб. x ' + item.count()}"></p>
+            <p th:text="${'Сумма: ' + (item.price() * item.count()) + ' руб.'}"></p>
+            <div class="actions">
+                <form th:action="@{/cart/items}" method="post">
+                    <input type="hidden" name="id" th:value="${item.id()}"/>
+                    <input type="hidden" name="action" value="MINUS"/>
+                    <button type="submit">-</button>
+                </form>
+                <form th:action="@{/cart/items}" method="post">
+                    <input type="hidden" name="id" th:value="${item.id()}"/>
+                    <input type="hidden" name="action" value="PLUS"/>
+                    <button type="submit">+</button>
+                </form>
+                <form th:action="@{/cart/items}" method="post">
+                    <input type="hidden" name="id" th:value="${item.id()}"/>
+                    <input type="hidden" name="action" value="DELETE"/>
+                    <button type="submit">Удалить</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="total" th:text="${'Итого: ' + total + ' руб.'}"></h3>
+
+    <form th:action="@{/buy}" method="post">
+        <button type="submit">Оформить заказ</button>
+    </form>
+</div>
+</body>
+</html>

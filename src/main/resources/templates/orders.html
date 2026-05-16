@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Orders</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="page">
+    <header class="header">
+        <h2 class="brand">Заказы</h2>
+        <nav class="nav">
+            <a th:href="@{/items}">Витрина</a>
+            <a th:href="@{/cart/items}">Корзина</a>
+        </nav>
+    </header>
+
+    <div class="card empty" th:if="${orders.isEmpty()}">
+        Заказов пока нет
+    </div>
+
+    <div class="list" th:if="${!orders.isEmpty()}">
+        <div class="card list-card" th:each="order : ${orders}">
+            <a th:href="@{/orders/{id}(id=${order.id()})}" th:text="${'Заказ #' + order.id()}"></a>
+            <p th:text="${'Сумма: ' + order.totalSum() + ' руб.'}"></p>
+            <p th:text="${'Товаров: ' + order.items().size()}"></p>
+        </div>
+    </div>
+</div>
+</body>
+</html>
