@@ -1,4 +1,4 @@
-package ru.yandex.marketapp.cart.infrastructure.jpa;
+package ru.yandex.marketapp.cart.infrastructure.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,7 +13,7 @@ import org.springframework.data.relational.core.mapping.Table;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class CartItemJpaEntity {
+public class CartItemEntity {
 
     @Id
     private Long id;

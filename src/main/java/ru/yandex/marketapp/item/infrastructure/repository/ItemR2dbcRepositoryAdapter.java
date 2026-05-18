@@ -12,15 +12,15 @@ import ru.yandex.marketapp.item.domain.ItemsPage;
 import ru.yandex.marketapp.item.domain.ItemsSearchContext;
 import ru.yandex.marketapp.item.domain.Paging;
 import ru.yandex.marketapp.item.domain.Price;
-import ru.yandex.marketapp.item.infrastructure.jpa.ItemJpaEntity;
+import ru.yandex.marketapp.item.infrastructure.entity.ItemEntity;
 
 import java.util.List;
 
 @Repository
 @RequiredArgsConstructor
-public class ItemJpaRepositoryAdapter implements ItemRepository {
+public class ItemR2dbcRepositoryAdapter implements ItemRepository {
 
-    private final ItemJpaRepository jpaRepository;
+    private final ItemR2dbcRepository r2dbcRepository;
     private final DatabaseClient databaseClient;
 
     @Override
@@ -53,7 +53,7 @@ public class ItemJpaRepositoryAdapter implements ItemRepository {
             countSpec = countSpec.bind("search", search);
         }
 
-        Mono<List<Item>> items = itemsSpec.map((row, metadata) -> toDomainEntity(new ItemJpaEntity(
+        Mono<List<Item>> items = itemsSpec.map((row, metadata) -> toDomainEntity(new ItemEntity(
                         row.get("id", Long.class),
                         row.get("title", String.class),
                         row.get("description", String.class),
@@ -83,7 +83,7 @@ public class ItemJpaRepositoryAdapter implements ItemRepository {
 
     @Override
     public Mono<Item> findById(long id) {
-        return jpaRepository.findById(id)
+        return r2dbcRepository.findById(id)
                 .map(this::toDomainEntity);
     }
 
@@ -92,19 +92,19 @@ public class ItemJpaRepositoryAdapter implements ItemRepository {
         if (ids.isEmpty()) {
             return Flux.empty();
         }
-        return jpaRepository.findByIdIn(ids)
+        return r2dbcRepository.findByIdIn(ids)
                 .map(this::toDomainEntity)
                 .sort((left, right) -> Long.compare(left.getId().id(), right.getId().id()));
     }
 
     @Override
     public Mono<Item> save(Item item) {
-        ItemJpaEntity jpaEntity = toJpaEntity(item);
-        return jpaRepository.save(jpaEntity)
+        ItemEntity jpaEntity = toJpaEntity(item);
+        return r2dbcRepository.save(jpaEntity)
                 .map(this::toDomainEntity);
     }
 
-    private Item toDomainEntity(ItemJpaEntity jpaEntity) {
+    private Item toDomainEntity(ItemEntity jpaEntity) {
         return new Item(
                 new ItemId(jpaEntity.getId()),
                 jpaEntity.getTitle(),
@@ -115,8 +115,8 @@ public class ItemJpaRepositoryAdapter implements ItemRepository {
         );
     }
 
-    private ItemJpaEntity toJpaEntity(Item item) {
-        return new ItemJpaEntity(
+    private ItemEntity toJpaEntity(Item item) {
+        return new ItemEntity(
                 item.getId().id(),
                 item.getTitle(),
                 item.getDescription(),

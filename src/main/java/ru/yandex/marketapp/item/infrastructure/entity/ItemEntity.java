@@ -1,4 +1,4 @@
-package ru.yandex.marketapp.item.infrastructure.jpa;
+package ru.yandex.marketapp.item.infrastructure.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,7 +13,7 @@ import org.springframework.data.relational.core.mapping.Table;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class ItemJpaEntity {
+public class ItemEntity {
     @Id
     private Long id;
 

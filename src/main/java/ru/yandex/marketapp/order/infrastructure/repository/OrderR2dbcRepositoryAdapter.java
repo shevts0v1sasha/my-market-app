@@ -9,30 +9,30 @@ import ru.yandex.marketapp.order.domain.Order;
 import ru.yandex.marketapp.order.domain.OrderId;
 import ru.yandex.marketapp.order.domain.OrderItem;
 import ru.yandex.marketapp.order.domain.OrderRepository;
-import ru.yandex.marketapp.order.infrastructure.jpa.OrderItemJpaEntity;
-import ru.yandex.marketapp.order.infrastructure.jpa.OrderJpaEntity;
+import ru.yandex.marketapp.order.infrastructure.entity.OrderItemEntity;
+import ru.yandex.marketapp.order.infrastructure.entity.OrderEntity;
 
 import java.util.List;
 
 @Repository
 @RequiredArgsConstructor
-public class OrderJpaRepositoryAdapter implements OrderRepository {
+public class OrderR2dbcRepositoryAdapter implements OrderRepository {
 
-    private final OrderJpaRepository orderJpaRepository;
-    private final OrderItemJpaRepository orderItemJpaRepository;
+    private final OrderR2dbcRepository orderR2dbcRepository;
+    private final OrderItemR2dbcRepository orderItemR2dbcRepository;
 
     @Override
     @Transactional
     public Mono<Order> save(Order order) {
-        OrderJpaEntity entity = new OrderJpaEntity();
+        OrderEntity entity = new OrderEntity();
         entity.setTotalSum(order.totalSum());
 
-        return orderJpaRepository.save(entity)
+        return orderR2dbcRepository.save(entity)
                 .flatMap(savedOrder -> {
-                    List<OrderItemJpaEntity> items = order.items().stream()
+                    List<OrderItemEntity> items = order.items().stream()
                             .map(item -> toJpa(item, savedOrder.getId()))
                             .toList();
-                    return orderItemJpaRepository.saveAll(items)
+                    return orderItemR2dbcRepository.saveAll(items)
                             .collectList()
                             .map(savedItems -> toDomain(savedOrder, savedItems));
                 });
@@ -41,36 +41,37 @@ public class OrderJpaRepositoryAdapter implements OrderRepository {
     @Override
     @Transactional(readOnly = true)
     public Flux<Order> findAll() {
-        return orderJpaRepository.findAll()
+        return orderR2dbcRepository.findAll()
                 .collectList()
+                .filter(orders -> !orders.isEmpty())
                 .flatMapMany(orders -> {
-                    if (orders.isEmpty()) {
-                        return Flux.empty();
-                    }
                     List<Long> orderIds = orders.stream()
-                            .map(OrderJpaEntity::getId)
+                            .map(OrderEntity::getId)
                             .toList();
-                    return orderItemJpaRepository.findByOrderIdIn(orderIds)
-                            .collectMultimap(OrderItemJpaEntity::getOrderId)
-                            .flatMapMany(itemsByOrderId -> Flux.fromIterable(orders)
-                                    .map(order -> toDomain(
-                                            order,
-                                            List.copyOf(itemsByOrderId.getOrDefault(order.getId(), List.of()))
-                                    )));
+
+                    return orderItemR2dbcRepository.findByOrderIdIn(orderIds)
+                            .collectMultimap(OrderItemEntity::getOrderId)
+                            .flatMapMany(itemsByOrderId ->
+                                    Flux.fromIterable(orders)
+                                            .map(order -> toDomain(
+                                                    order,
+                                                    List.copyOf(itemsByOrderId.getOrDefault(order.getId(), List.of()))
+                                            ))
+                            );
                 });
     }
 
     @Override
     @Transactional(readOnly = true)
     public Mono<Order> findById(long id) {
-        return orderJpaRepository.findById(id)
-                .flatMap(order -> orderItemJpaRepository.findByOrderId(id)
+        return orderR2dbcRepository.findById(id)
+                .flatMap(order -> orderItemR2dbcRepository.findByOrderId(id)
                         .collectList()
                         .map(items -> toDomain(order, items)));
     }
 
-    private OrderItemJpaEntity toJpa(OrderItem item, long orderId) {
-        return new OrderItemJpaEntity(
+    private OrderItemEntity toJpa(OrderItem item, long orderId) {
+        return new OrderItemEntity(
                 null,
                 item.itemId(),
                 item.title(),
@@ -80,7 +81,7 @@ public class OrderJpaRepositoryAdapter implements OrderRepository {
         );
     }
 
-    private Order toDomain(OrderJpaEntity entity, List<OrderItemJpaEntity> orderItems) {
+    private Order toDomain(OrderEntity entity, List<OrderItemEntity> orderItems) {
         List<OrderItem> items = orderItems.stream()
                 .map(item -> new OrderItem(
                         item.getItemId(),

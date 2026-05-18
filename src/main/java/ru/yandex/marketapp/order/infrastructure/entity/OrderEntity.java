@@ -1,4 +1,4 @@
-package ru.yandex.marketapp.order.infrastructure.jpa;
+package ru.yandex.marketapp.order.infrastructure.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,7 +13,7 @@ import org.springframework.data.relational.core.mapping.Table;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderJpaEntity {
+public class OrderEntity {
 
     @Id
     private Long id;
