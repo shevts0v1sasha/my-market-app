@@ -3,6 +3,7 @@ package ru.yandex.marketapp.item.infrastructure.service.query;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
 import ru.yandex.marketapp.cart.domain.Cart;
 import ru.yandex.marketapp.cart.domain.CartRepository;
 import ru.yandex.marketapp.item.domain.Item;
@@ -17,7 +18,6 @@ import ru.yandex.marketapp.item.infrastructure.mapper.ItemMapper;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @Transactional(readOnly = true)
@@ -28,24 +28,30 @@ public class ItemQueryService {
     private final ItemMapper itemMapper;
     private final ItemRepository itemRepository;
 
-    public SearchItemsResponse find(SearchItemsRequest request) {
-        Cart cart = cartRepository.getCurrentCart();
-        ItemsPage itemsPage = itemRepository.find(new ItemsSearchContext(
-                request.getSearch(),
-                request.getPageNumber(),
-                request.getPageSize(),
-                request.getSort())
-        );
+    public Mono<SearchItemsResponse> find(SearchItemsRequest request) {
+        Mono<Cart> cart = cartRepository.getCurrentCart();
+        Mono<ItemsPage> itemsPage = itemRepository.find(new ItemsSearchContext(
+                        request.getSearch(),
+                        request.getPageNumber(),
+                        request.getPageSize(),
+                        request.getSort())
+                );
 
-        List<List<ItemDto>> split = split(itemsPage.items(), cart);
-
-        return new SearchItemsResponse(split, itemsPage.search(), itemsPage.sort(), itemsPage.paging());
+        return Mono.zip(itemsPage, cart)
+                .map(result -> {
+                    ItemsPage page = result.getT1();
+                    List<List<ItemDto>> split = split(page.items(), result.getT2());
+                    return new SearchItemsResponse(split, page.search(), page.sort(), page.paging());
+                });
     }
 
-    public Optional<ItemDto> findById(long id) {
-        Cart cart = cartRepository.getCurrentCart();
-        return itemRepository.findById(id)
-                .map(item -> itemMapper.map(item, cart.countFor(item.getId().id())));
+    public Mono<ItemDto> findById(long id) {
+        return Mono.zip(itemRepository.findById(id), cartRepository.getCurrentCart())
+                .map(result -> {
+                    Item item = result.getT1();
+                    Cart cart = result.getT2();
+                    return itemMapper.map(item, cart.countFor(item.getId().id()));
+                });
     }
 
     private List<List<ItemDto>> split(List<Item> items, Cart cart) {

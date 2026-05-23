@@ -3,6 +3,7 @@ package ru.yandex.marketapp.cart.infrastructure.service.query;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Mono;
 import ru.yandex.marketapp.cart.domain.CartRepository;
 import ru.yandex.marketapp.cart.infrastructure.api.dto.CartResponse;
 import ru.yandex.marketapp.item.domain.ItemRepository;
@@ -20,18 +21,20 @@ public class CartQueryService {
     private final ItemRepository itemRepository;
     private final ItemMapper itemMapper;
 
-    public CartResponse getCurrentCart() {
-        var cart = cartRepository.getCurrentCart();
-        var countsByItemId = cart.getItems().stream()
-                .collect(Collectors.toMap(i -> i.getItemId(), Function.identity(), (left, right) -> right));
-        var items = itemRepository.findByIds(
-                        countsByItemId.keySet().stream().toList()
-                ).stream()
-                .map(item -> itemMapper.map(item, countsByItemId.get(item.getId().id()).getAmount()))
-                .toList();
-        long total = items.stream()
-                .mapToLong(item -> item.price() * item.count())
-                .sum();
-        return new CartResponse(items, total);
+    public Mono<CartResponse> getCurrentCart() {
+        return cartRepository.getCurrentCart()
+                .flatMap(cart -> {
+                    var countsByItemId = cart.getItems().stream()
+                            .collect(Collectors.toMap(i -> i.getItemId(), Function.identity(), (left, right) -> right));
+                    return itemRepository.findByIds(countsByItemId.keySet().stream().toList())
+                            .map(item -> itemMapper.map(item, countsByItemId.get(item.getId().id()).getAmount()))
+                            .collectList()
+                            .map(items -> {
+                                long total = items.stream()
+                                        .mapToLong(item -> item.price() * item.count())
+                                        .sum();
+                                return new CartResponse(items, total);
+                            });
+                });
     }
 }

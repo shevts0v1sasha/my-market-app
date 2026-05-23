@@ -1,12 +1,12 @@
 package ru.yandex.marketapp.order.domain;
 
-import java.util.List;
-import java.util.Optional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 public interface OrderRepository {
-    Order save(Order order);
+    Mono<Order> save(Order order);
 
-    List<Order> findAll();
+    Flux<Order> findAll();
 
-    Optional<Order> findById(long id);
+    Mono<Order> findById(long id);
 }
