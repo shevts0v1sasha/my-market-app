@@ -1,7 +1,9 @@
 package ru.yandex.market.payment.repository;
 
+import reactor.core.publisher.Mono;
+
 public interface BalanceRepository {
-    long getBalance();
-    long increaseBalance(long money);
-    long decreaseBalance(long money);
+    Mono<Long> getBalance();
+    Mono<Long> increaseBalance(long money);
+    Mono<Long> decreaseBalance(long money);
 }

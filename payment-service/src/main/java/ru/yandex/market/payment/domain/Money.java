@@ -1,14 +1,14 @@
 package ru.yandex.market.payment.domain;
 
 import ru.yandex.market.payment.exception.IllegalMoneyException;
-import ru.yandex.market.payment.exception.MoneyExceptionCode;
+import ru.yandex.market.payment.exception.ExceptionCode;
 
 public record Money(long amount) {
 
     public Money {
         if (amount <= 0) {
             throw new IllegalMoneyException("Amount should be greater then 0",
-                    MoneyExceptionCode.INSUFFICIENT);
+                    ExceptionCode.INSUFFICIENT_MONEY);
         }
     }
 }

@@ -1,6 +1,8 @@
 package ru.yandex.market.payment.repository;
 
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import ru.yandex.market.payment.domain.Money;
 import ru.yandex.market.payment.domain.Payment;
 
@@ -17,20 +19,22 @@ public class InMemoryPaymentRepository implements PaymentRepository {
     private final Map<Long, Payment> paymentsByOrderId = new ConcurrentHashMap<>();
 
     @Override
-    public Optional<Payment> findByOrderId(long orderId) {
-        return Optional.ofNullable(paymentsByOrderId.get(orderId));
+    public Mono<Payment> findByOrderId(long orderId) {
+        return Optional.ofNullable(paymentsByOrderId.get(orderId))
+                .map(Mono::just)
+                .orElseGet(Mono::empty);
     }
 
     @Override
-    public List<Payment> findAll() {
-        return paymentsById.values().stream().toList();
+    public Flux<Payment> findAll() {
+        return Flux.fromIterable(paymentsById.values().stream().toList());
     }
 
     @Override
-    public Payment save(Long orderId, Money money) {
+    public Mono<Payment> save(Long orderId, Money money) {
         Payment payment = new Payment(money, orderId);
         paymentsById.put(payment.getId(), payment);
         paymentsByOrderId.put(payment.getOrderId(), payment);
-        return payment;
+        return Mono.just(payment);
     }
 }

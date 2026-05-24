@@ -7,9 +7,9 @@ import java.util.UUID;
 
 @Getter
 public class Payment {
-    private final UUID id;
+    private final Long id;
     private final Long orderId;
-    private Instant createdAt;
+    private final Instant createdAt;
     private final Money money;
 
     public Payment(Money money, Long orderId) {
@@ -22,5 +22,6 @@ public class Payment {
         id = UUID.randomUUID();
         this.money = money;
         this.orderId = orderId;
+        this.createdAt = Instant.now();
     }
 }

@@ -25,7 +25,7 @@ paths:
         - payments
       operationId: getBalance
       summary: Получить баланс
-      description: Возвращает текущий баланс пользователя в сервисе платежей
+      description: Возвращает текущий баланс в копейках пользователя в сервисе платежей
       responses:
         '200':
           description: Баланс успешно получен
@@ -74,10 +74,10 @@ components:
         - balance
       properties:
         balance:
-          type: number
-          format: decimal
-          example: 1500.00
-          description: Текущий баланс пользователя
+          type: integer
+          format: int64
+          example: 1500000
+          description: Текущий баланс пользователя в копейках
 
     PaymentRequest:
       type: object
@@ -86,15 +86,16 @@ components:
         - amount
       properties:
         orderId:
-          type: string
-          example: "order-1"
+          type: integer
+          format: int64
+          example: 1
           description: Идентификатор заказа
         amount:
-          type: number
-          format: decimal
-          minimum: 1.0
-          example: 499.99
-          description: Сумма платежа
+          type: integer
+          format: int64
+          minimum: 1
+          example: 499000
+          description: Сумма платежа в копейках
 
     PaymentResponse:
       type: object
@@ -105,18 +106,20 @@ components:
         - status
       properties:
         paymentId:
-          type: string
-          example: "payment-1"
+          type: integer
+          format: int64
+          example: 1
           description: Идентификатор платежа
         orderId:
-          type: string
-          example: "order-1"
+          type: integer
+          format: int64
+          example: 1
           description: Идентификатор заказа
         amount:
-          type: number
-          format: decimal
-          example: 499.99
-          description: Сумма платежа
+          type: integer
+          format: int64
+          example: 499000
+          description: Сумма платежа в копейках
         status:
           $ref: '#/components/schemas/PaymentStatus'
 

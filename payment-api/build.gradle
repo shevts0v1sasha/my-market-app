@@ -4,7 +4,9 @@ plugins {
 
 openApiGenerate {
     generatorName = 'spring'
-    inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
+    inputSpec = file("$projectDir/src/main/resources/openapi/openapi.yaml")
+            .toURI()
+            .toString()
     outputDir = "$buildDir/generated/openapi"
 
     apiPackage = 'ru.yandex.market.payment.api'
