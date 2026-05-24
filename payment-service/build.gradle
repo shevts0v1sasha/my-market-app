@@ -1,31 +1,3 @@
-plugins {
-    id "org.openapi.generator" version "7.12.0"
+dependencies {
+    implementation project(':payment-api')
 }
-
-openApiGenerate {
-    generatorName = 'spring'
-    inputSpec = "$projectDir/src/main/resources/openapi/openapi.yaml"
-    outputDir = "$buildDir/generated/openapi"
-
-    apiPackage = 'ru.yandex.market.payment.api'
-    modelPackage = 'ru.yandex.market.payment.api.model'
-
-    configOptions = [
-            interfaceOnly: 'true',
-            useSpringBoot3: 'true',
-            reactive: 'true',
-            dateLibrary: 'java8',
-            useTags: 'true',
-            skipDefaultInterface: 'true'
-    ]
-}
-
-sourceSets {
-    main {
-        java {
-            srcDir "$buildDir/generated/openapi/src/main/java"
-        }
-    }
-}
-
-compileJava.dependsOn tasks.openApiGenerate

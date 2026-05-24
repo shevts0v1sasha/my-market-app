@@ -1,0 +1,172 @@
+openapi: 3.1.0
+
+info:
+  title: Payment API
+  version: 1.0.0
+  description: |
+    # Payment API
+    REST API для обработки платежей интернет магазина
+  contact:
+    name: Aleksandr Shevtsov
+    email: shevts0v1sasha@gmail.com
+
+servers:
+  - url: http://localhost:8102
+    description: Local payment service
+
+tags:
+  - name: payments
+    description: Операции платежного сервиса
+
+paths:
+  /api/v1/payments/balance:
+    get:
+      tags:
+        - payments
+      operationId: getBalance
+      summary: Получить баланс
+      description: Возвращает текущий баланс пользователя в сервисе платежей
+      responses:
+        '200':
+          description: Баланс успешно получен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalanceResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/v1/payments:
+    post:
+      tags:
+        - payments
+      operationId: processPayment
+      summary: Выполнить платеж
+      description: |
+        Выполняет списание суммы платежа с текущего баланса
+
+        Если средств недостаточно, сервис возвращает ошибку `INSUFFICIENT_FUNDS`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+      responses:
+        '200':
+          description: Платеж успешно выполнен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/InsufficientFunds'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    BalanceResponse:
+      type: object
+      required:
+        - balance
+      properties:
+        balance:
+          type: number
+          format: decimal
+          example: 1500.00
+          description: Текущий баланс пользователя
+
+    PaymentRequest:
+      type: object
+      required:
+        - orderId
+        - amount
+      properties:
+        orderId:
+          type: string
+          example: "order-1"
+          description: Идентификатор заказа
+        amount:
+          type: number
+          format: decimal
+          minimum: 1.0
+          example: 499.99
+          description: Сумма платежа
+
+    PaymentResponse:
+      type: object
+      required:
+        - paymentId
+        - orderId
+        - amount
+        - status
+      properties:
+        paymentId:
+          type: string
+          example: "payment-1"
+          description: Идентификатор платежа
+        orderId:
+          type: string
+          example: "order-1"
+          description: Идентификатор заказа
+        amount:
+          type: number
+          format: decimal
+          example: 499.99
+          description: Сумма платежа
+        status:
+          $ref: '#/components/schemas/PaymentStatus'
+
+    PaymentStatus:
+      type: string
+      enum:
+        - SUCCESS
+        - FAILED
+      example: SUCCESS
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: INSUFFICIENT_FUNDS
+        message:
+          type: string
+          example: Not enough funds to process payment
+
+  responses:
+    BadRequest:
+      description: Некорректный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: BAD_REQUEST
+            message: Invalid payment request
+
+    InsufficientFunds:
+      description: Недостаточно средств
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: INSUFFICIENT_FUNDS
+            message: Not enough funds to process payment
+
+    InternalServerError:
+      description: Внутренняя ошибка сервиса
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: INTERNAL_ERROR
+            message: Internal server error
