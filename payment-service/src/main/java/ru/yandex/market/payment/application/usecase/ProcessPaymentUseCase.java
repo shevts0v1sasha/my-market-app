@@ -25,12 +25,12 @@ public class ProcessPaymentUseCase {
                         return Mono.error(new IllegalMoneyException(
                                 "Not enough money for purchase order with id=%d"
                                         .formatted(request.orderId()),
-                                ExceptionCode.INSUFFICIENT_MONEY
+                                ExceptionCode.INSUFFICIENT_FUNDS
                         ));
                     }
 
                     return paymentRepository.findByOrderId(request.orderId())
-                            .flatMap(payment -> Mono.<Void>error(
+                            .flatMap(payment -> Mono.<Payment>error(
                                     new PaymentAlreadyProcessedException(
                                             """
                                             Payment for order with id=%d already processed at %s
@@ -41,15 +41,14 @@ public class ProcessPaymentUseCase {
                                             ExceptionCode.PAYMENT_ALREADY_PROCESSED
                                     )
                             ))
-                            .then(paymentRepository.save(
-                                    request.orderId(),
-                                    request.money()
-                            ))
-                            .flatMap(payment ->
-                                    balanceRepository.decreaseBalance(payment.getMoney().amount())
-                                            .thenReturn(payment)
-                            );
+                            .switchIfEmpty(Mono.defer(() -> paymentRepository.save(
+                                            request.orderId(),
+                                            request.money()
+                                    )
+                                    .flatMap(payment ->
+                                            balanceRepository.decreaseBalance(payment.getMoney().amount())
+                                                    .thenReturn(payment)
+                                    )));
                 });
     }
-
 }

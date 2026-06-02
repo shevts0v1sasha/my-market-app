@@ -1,5 +1,8 @@
 package ru.yandex.market.payment.exception;
 
+import lombok.Getter;
+
+@Getter
 public class IllegalMoneyException extends RuntimeException {
 
     private final ExceptionCode code;

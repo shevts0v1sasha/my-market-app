@@ -25,12 +25,10 @@
         <p class="item-count" th:text="${'В корзине: ' + item.count()}"></p>
 
         <div class="actions">
-            <form th:action="@{/items/{id}(id=${item.id()})}" method="post">
-                <input type="hidden" name="action" value="MINUS"/>
+            <form th:action="|/items/${item.id()}?action=MINUS|" method="post">
                 <button type="submit">-</button>
             </form>
-            <form th:action="@{/items/{id}(id=${item.id()})}" method="post">
-                <input type="hidden" name="action" value="PLUS"/>
+            <form th:action="|/items/${item.id()}?action=PLUS|" method="post">
                 <button type="submit">+</button>
             </form>
         </div>

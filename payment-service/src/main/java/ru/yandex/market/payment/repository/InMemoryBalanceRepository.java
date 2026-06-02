@@ -25,4 +25,8 @@ public class InMemoryBalanceRepository implements BalanceRepository {
     public Mono<Long> decreaseBalance(long money) {
         return Mono.just(balance.updateAndGet(m -> new Money(m.amount() - money)).amount());
     }
+
+    public void reset() {
+        balance.set(new Money(500_000));
+    }
 }

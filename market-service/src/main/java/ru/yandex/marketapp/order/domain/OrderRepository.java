@@ -9,4 +9,6 @@ public interface OrderRepository {
     Flux<Order> findAll();
 
     Mono<Order> findById(long id);
+
+    Mono<Void> deleteById(long id);
 }

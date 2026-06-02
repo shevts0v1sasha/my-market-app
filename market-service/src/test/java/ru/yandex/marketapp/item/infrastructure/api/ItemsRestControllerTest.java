@@ -6,8 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Mono;
 import ru.yandex.marketapp.cart.application.usecase.AddCartItemUseCase;
 import ru.yandex.marketapp.item.infrastructure.service.query.ItemQueryService;
+
+import static org.mockito.Mockito.when;
 
 @WebFluxTest(ItemsRestController.class)
 public class ItemsRestControllerTest {
@@ -25,7 +28,7 @@ public class ItemsRestControllerTest {
     class ValidationTest {
 
         @Test
-        void shouldThrowBadRequestOnInvalidPageNumberAndPageSize() throws Exception {
+        void shouldThrowBadRequestOnInvalidPageNumberAndPageSize() {
             webTestClient.get()
                     .uri(uriBuilder -> uriBuilder.path("/")
                             .queryParam("pageSize", "-1")
@@ -39,5 +42,22 @@ public class ItemsRestControllerTest {
                     .jsonPath("$.errors").isArray();
         }
 
+        @Test
+        void shouldChangeItemCountOnItemsPage() {
+            when(addCartItemUseCase.handle(1L, ru.yandex.marketapp.cart.application.usecase.ChangeCartItemAction.PLUS))
+                    .thenReturn(Mono.empty());
+
+            webTestClient.post()
+                    .uri(uriBuilder -> uriBuilder.path("/items/1")
+                            .queryParam("action", "PLUS")
+                            .queryParam("search", "")
+                            .queryParam("sort", "NO")
+                            .queryParam("pageNumber", "1")
+                            .queryParam("pageSize", "5")
+                            .build())
+                    .exchange()
+                    .expectStatus().is3xxRedirection()
+                    .expectHeader().location("/items?search=&sort=NO&pageNumber=1&pageSize=5");
+        }
     }
 }

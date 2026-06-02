@@ -7,8 +7,8 @@ public record Money(long amount) {
 
     public Money {
         if (amount <= 0) {
-            throw new IllegalMoneyException("Amount should be greater then 0",
-                    ExceptionCode.INSUFFICIENT_MONEY);
+            throw new IllegalMoneyException("Amount should be greater than 0",
+                    ExceptionCode.BAD_REQUEST);
         }
     }
 }

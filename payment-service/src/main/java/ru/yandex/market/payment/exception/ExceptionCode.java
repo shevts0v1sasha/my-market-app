@@ -1,6 +1,7 @@
 package ru.yandex.market.payment.exception;
 
 public enum ExceptionCode {
-    INSUFFICIENT_MONEY,
-    PAYMENT_ALREADY_PROCESSED
+    INSUFFICIENT_FUNDS,
+    PAYMENT_ALREADY_PROCESSED,
+    BAD_REQUEST
 }

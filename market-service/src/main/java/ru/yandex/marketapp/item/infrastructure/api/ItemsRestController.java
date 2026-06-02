@@ -50,25 +50,24 @@ public class ItemsRestController {
     @PostMapping("/items/{id}")
     public Mono<String> changeCountOnItemPage(@PathVariable long id,
                                               @RequestParam ChangeItemAction action,
+                                              @RequestParam(required = false) String search,
+                                              @RequestParam(required = false) Sort sort,
+                                              @RequestParam(required = false) Integer pageNumber,
+                                              @RequestParam(required = false) Integer pageSize,
                                               Model model) {
         return addCartItemUseCase.handle(id, ChangeCartItemAction.valueOf(action.name()))
-                .then(queryService.findById(id))
-                .switchIfEmpty(Mono.error(new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND)))
-                .map(item -> {
-                    model.addAttribute("item", item);
-                    return "item";
-                });
-    }
-
-    @PostMapping("/items")
-    public Mono<String> changeCountOnItemsPage(@RequestParam long id,
-                                               @RequestParam(defaultValue = "") String search,
-                                               @RequestParam(defaultValue = "NO") Sort sort,
-                                               @RequestParam(defaultValue = "1") int pageNumber,
-                                               @RequestParam(defaultValue = "5") int pageSize,
-                                               @RequestParam ChangeItemAction action) {
-        return addCartItemUseCase.handle(id, ChangeCartItemAction.valueOf(action.name()))
-                .thenReturn("redirect:/items?search=%s&sort=%s&pageNumber=%d&pageSize=%d"
-                        .formatted(search, sort, pageNumber, pageSize));
+                .then(Mono.defer(() -> {
+                    if (search != null && sort != null && pageNumber != null && pageSize != null) {
+                        return Mono.just("redirect:/items?search=%s&sort=%s&pageNumber=%d&pageSize=%d"
+                                .formatted(search, sort, pageNumber, pageSize));
+                    }
+                    return queryService.findById(id)
+                            .switchIfEmpty(Mono.error(new ResponseStatusException(
+                                    org.springframework.http.HttpStatus.NOT_FOUND)))
+                            .map(item -> {
+                                model.addAttribute("item", item);
+                                return "item";
+                            });
+                }));
     }
 }

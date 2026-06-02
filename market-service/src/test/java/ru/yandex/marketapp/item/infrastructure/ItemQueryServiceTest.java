@@ -12,6 +12,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.test.StepVerifier;
 import ru.yandex.marketapp.config.PostgresTestContainer;
+import ru.yandex.marketapp.config.RedisTestContainer;
 import ru.yandex.marketapp.item.domain.Sort;
 import ru.yandex.marketapp.item.infrastructure.api.dto.SearchItemsRequest;
 import ru.yandex.marketapp.item.infrastructure.api.dto.SearchItemsResponse;
@@ -25,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @Testcontainers // включает junit extension testcontainers, оно находит поля container и управляет их запуском/остановкой
-@ImportTestcontainers(PostgresTestContainer.class) // импортирует тестконтейнер из отдельного класса
+@ImportTestcontainers({PostgresTestContainer.class, RedisTestContainer.class}) // импортирует тестконтейнер из отдельного класса
 @ActiveProfiles("test")
 public class ItemQueryServiceTest {
 

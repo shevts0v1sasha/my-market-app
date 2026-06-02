@@ -15,6 +15,7 @@ import ru.yandex.marketapp.item.infrastructure.api.dto.ItemDto;
 import java.util.List;
 
 import static org.mockito.Mockito.when;
+
 @WebFluxTest(CartController.class)
 class CartControllerTest {
 
@@ -28,10 +29,14 @@ class CartControllerTest {
     private CartQueryService cartQueryService;
 
     @Test
-    void shouldRenderCartPage() throws Exception {
+    void shouldRenderCartPage() {
         CartResponse response = new CartResponse(
                 List.of(new ItemDto(1L, "cat", "desc", "/cat.jpg", 100L, 2)),
-                200L
+                200L,
+                5000L,
+                true,
+                true,
+                null
         );
         when(cartQueryService.getCurrentCart()).thenReturn(Mono.just(response));
 
@@ -42,14 +47,13 @@ class CartControllerTest {
     }
 
     @Test
-    void shouldChangeCartItemAndRenderCartPage() throws Exception {
-        CartResponse response = new CartResponse(List.of(), 0L);
+    void shouldChangeCartItemAndRenderCartPage() {
+        CartResponse response = new CartResponse(List.of(), 0L, null, false, true, null);
         when(addCartItemUseCase.handle(1L, ChangeCartItemAction.PLUS)).thenReturn(Mono.empty());
         when(cartQueryService.getCurrentCart()).thenReturn(Mono.just(response));
 
         webTestClient.post()
-                .uri(uriBuilder -> uriBuilder.path("/cart/items")
-                        .queryParam("id", "1")
+                .uri(uriBuilder -> uriBuilder.path("/cart/items/1")
                         .queryParam("action", "PLUS")
                         .build())
                 .exchange()

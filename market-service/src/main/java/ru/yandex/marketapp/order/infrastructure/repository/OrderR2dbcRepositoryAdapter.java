@@ -70,6 +70,12 @@ public class OrderR2dbcRepositoryAdapter implements OrderRepository {
                         .map(items -> toDomain(order, items)));
     }
 
+    @Override
+    @Transactional
+    public Mono<Void> deleteById(long id) {
+        return orderR2dbcRepository.deleteById(id);
+    }
+
     private OrderItemEntity toJpa(OrderItem item, long orderId) {
         return new OrderItemEntity(
                 null,

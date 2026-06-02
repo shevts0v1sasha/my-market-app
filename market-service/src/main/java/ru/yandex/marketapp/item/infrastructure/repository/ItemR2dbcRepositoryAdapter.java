@@ -97,6 +97,11 @@ public class ItemR2dbcRepositoryAdapter implements ItemRepository {
                 .sort((left, right) -> Long.compare(left.getId().id(), right.getId().id()));
     }
 
+    public Flux<Item> findAllItems() {
+        return r2dbcRepository.findAll()
+                .map(this::toDomainEntity);
+    }
+
     @Override
     public Mono<Item> save(Item item) {
         ItemEntity jpaEntity = toJpaEntity(item);

@@ -4,5 +4,12 @@ import ru.yandex.marketapp.item.infrastructure.api.dto.ItemDto;
 
 import java.util.List;
 
-public record CartResponse(List<ItemDto> items, long total) {
+public record CartResponse(
+        List<ItemDto> items,
+        long total,
+        Long balanceRubles,
+        boolean canBuy,
+        boolean paymentServiceAvailable,
+        String paymentMessage
+) {
 }

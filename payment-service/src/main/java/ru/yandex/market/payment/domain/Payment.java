@@ -3,10 +3,12 @@ package ru.yandex.market.payment.domain;
 import lombok.Getter;
 
 import java.time.Instant;
-import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Getter
 public class Payment {
+    private static final AtomicLong ID_SEQUENCE = new AtomicLong(1);
+
     private final Long id;
     private final Long orderId;
     private final Instant createdAt;
@@ -19,7 +21,7 @@ public class Payment {
         if (orderId == null) {
             throw new IllegalArgumentException("OrderId must not be null");
         }
-        id = UUID.randomUUID();
+        id = ID_SEQUENCE.getAndIncrement();
         this.money = money;
         this.orderId = orderId;
         this.createdAt = Instant.now();

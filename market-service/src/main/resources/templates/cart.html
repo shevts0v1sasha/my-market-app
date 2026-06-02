@@ -26,19 +26,13 @@
             <p th:text="${item.price() + ' руб. x ' + item.count()}"></p>
             <p th:text="${'Сумма: ' + (item.price() * item.count()) + ' руб.'}"></p>
             <div class="actions">
-                <form th:action="@{/cart/items}" method="post">
-                    <input type="hidden" name="id" th:value="${item.id()}"/>
-                    <input type="hidden" name="action" value="MINUS"/>
+                <form th:action="|/cart/items/${item.id()}?action=MINUS|" method="post">
                     <button type="submit">-</button>
                 </form>
-                <form th:action="@{/cart/items}" method="post">
-                    <input type="hidden" name="id" th:value="${item.id()}"/>
-                    <input type="hidden" name="action" value="PLUS"/>
+                <form th:action="|/cart/items/${item.id()}?action=PLUS|" method="post">
                     <button type="submit">+</button>
                 </form>
-                <form th:action="@{/cart/items}" method="post">
-                    <input type="hidden" name="id" th:value="${item.id()}"/>
-                    <input type="hidden" name="action" value="DELETE"/>
+                <form th:action="|/cart/items/${item.id()}?action=DELETE|" method="post">
                     <button type="submit">Удалить</button>
                 </form>
             </div>
@@ -47,8 +41,11 @@
 
     <h3 class="total" th:text="${'Итого: ' + total + ' руб.'}"></h3>
 
-    <form th:action="@{/buy}" method="post">
-        <button type="submit">Оформить заказ</button>
+    <p th:if="${balance != null}" th:text="${'Баланс: ' + balance + ' руб.'}"></p>
+    <p class="error" th:if="${paymentMessage != null}" th:text="${paymentMessage}"></p>
+
+    <form th:action="@{/buy}" method="post" th:if="${!items.isEmpty()}">
+        <button type="submit" th:disabled="${!canBuy}">Оформить заказ</button>
     </form>
 </div>
 </body>
