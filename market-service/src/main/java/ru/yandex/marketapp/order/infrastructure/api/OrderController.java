@@ -11,9 +11,7 @@ import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 import ru.yandex.marketapp.order.application.usecase.BuyUseCase;
 import ru.yandex.marketapp.order.infrastructure.service.query.OrderQueryService;
-import ru.yandex.marketapp.payment.exception.PaymentFailedException;
-import ru.yandex.marketapp.payment.exception.PaymentInsufficientFundsException;
-import ru.yandex.marketapp.payment.exception.PaymentServiceUnavailableException;
+import ru.yandex.marketapp.payment.exception.PaymentException;
 
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
@@ -49,11 +47,7 @@ public class OrderController {
     public Mono<String> buy() {
         return buyUseCase.handle()
                 .map(orderId -> "redirect:/orders/%d?newOrder=true".formatted(orderId))
-                .onErrorResume(PaymentInsufficientFundsException.class,
-                        error -> Mono.just("redirect:/cart?paymentError=insufficient"))
-                .onErrorResume(PaymentServiceUnavailableException.class,
-                        error -> Mono.just("redirect:/cart?paymentError=unavailable"))
-                .onErrorResume(PaymentFailedException.class,
-                        error -> Mono.just("redirect:/cart?paymentError=failed"));
+                .onErrorResume(PaymentException.class, error ->
+                        Mono.just("redirect:/cart?paymentError=" + error.getPaymentErrorCode()));
     }
 }

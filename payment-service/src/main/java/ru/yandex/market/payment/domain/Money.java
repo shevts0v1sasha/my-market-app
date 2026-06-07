@@ -6,7 +6,7 @@ import ru.yandex.market.payment.exception.ExceptionCode;
 public record Money(long amount) {
 
     public Money {
-        if (amount <= 0) {
+        if (amount < 0) {
             throw new IllegalMoneyException("Amount should be greater than 0",
                     ExceptionCode.BAD_REQUEST);
         }

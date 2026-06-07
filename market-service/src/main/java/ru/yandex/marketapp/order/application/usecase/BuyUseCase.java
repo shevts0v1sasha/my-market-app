@@ -14,9 +14,7 @@ import ru.yandex.marketapp.order.domain.Order;
 import ru.yandex.marketapp.order.domain.OrderItem;
 import ru.yandex.marketapp.order.domain.OrderRepository;
 import ru.yandex.marketapp.payment.application.PaymentGateway;
-import ru.yandex.marketapp.payment.exception.PaymentFailedException;
-import ru.yandex.marketapp.payment.exception.PaymentInsufficientFundsException;
-import ru.yandex.marketapp.payment.exception.PaymentServiceUnavailableException;
+import ru.yandex.marketapp.payment.exception.PaymentException;
 
 import java.util.List;
 
@@ -64,11 +62,7 @@ public class BuyUseCase {
         return orderRepository.save(order)
                 .flatMap(created -> paymentGateway.processPayment(created.id().id(), totalKopecks)
                         .thenReturn(created)
-                        .onErrorResume(PaymentInsufficientFundsException.class, error ->
-                                orderRepository.deleteById(created.id().id()).then(Mono.error(error)))
-                        .onErrorResume(PaymentServiceUnavailableException.class, error ->
-                                orderRepository.deleteById(created.id().id()).then(Mono.error(error)))
-                        .onErrorResume(PaymentFailedException.class, error ->
+                        .onErrorResume(PaymentException.class, error ->
                                 orderRepository.deleteById(created.id().id()).then(Mono.error(error)))
                 )
                 .flatMap(created -> clearCart(cart).thenReturn(created.id().id()));
