@@ -3,6 +3,8 @@ package ru.yandex.marketapp.cart.infrastructure.api;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
@@ -10,6 +12,8 @@ import ru.yandex.marketapp.cart.application.usecase.AddCartItemUseCase;
 import ru.yandex.marketapp.cart.application.usecase.ChangeCartItemAction;
 import ru.yandex.marketapp.cart.infrastructure.api.dto.CartResponse;
 import ru.yandex.marketapp.cart.infrastructure.service.query.CartQueryService;
+import ru.yandex.marketapp.config.PasswordEncoderConfig;
+import ru.yandex.marketapp.config.SecurityConfig;
 import ru.yandex.marketapp.item.infrastructure.api.dto.ItemDto;
 
 import java.util.List;
@@ -17,6 +21,7 @@ import java.util.List;
 import static org.mockito.Mockito.when;
 
 @WebFluxTest(CartController.class)
+@Import({SecurityConfig.class, PasswordEncoderConfig.class})
 class CartControllerTest {
 
     @Autowired
@@ -27,6 +32,9 @@ class CartControllerTest {
 
     @MockitoBean
     private CartQueryService cartQueryService;
+
+    @MockitoBean
+    private ru.yandex.marketapp.user.infrastructure.security.R2dbcUserDetailsService userDetailsService;
 
     @Test
     void shouldRenderCartPage() {
@@ -40,7 +48,8 @@ class CartControllerTest {
         );
         when(cartQueryService.getCurrentCart()).thenReturn(Mono.just(response));
 
-        webTestClient.get()
+        webTestClient.mutateWith(SecurityMockServerConfigurers.mockUser("user1"))
+                .get()
                 .uri("/cart/items")
                 .exchange()
                 .expectStatus().isOk();
@@ -52,7 +61,9 @@ class CartControllerTest {
         when(addCartItemUseCase.handle(1L, ChangeCartItemAction.PLUS)).thenReturn(Mono.empty());
         when(cartQueryService.getCurrentCart()).thenReturn(Mono.just(response));
 
-        webTestClient.post()
+        webTestClient.mutateWith(SecurityMockServerConfigurers.mockUser("user1"))
+                .mutateWith(SecurityMockServerConfigurers.csrf())
+                .post()
                 .uri(uriBuilder -> uriBuilder.path("/cart/items/1")
                         .queryParam("action", "PLUS")
                         .build())

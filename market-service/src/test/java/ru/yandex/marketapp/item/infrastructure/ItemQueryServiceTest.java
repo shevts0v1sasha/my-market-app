@@ -7,12 +7,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.context.ImportTestcontainers;
+import org.springframework.context.annotation.Import;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.test.StepVerifier;
 import ru.yandex.marketapp.config.PostgresTestContainer;
 import ru.yandex.marketapp.config.RedisTestContainer;
+import ru.yandex.marketapp.config.TestOAuth2ClientConfig;
 import ru.yandex.marketapp.item.domain.Sort;
 import ru.yandex.marketapp.item.infrastructure.api.dto.SearchItemsRequest;
 import ru.yandex.marketapp.item.infrastructure.api.dto.SearchItemsResponse;
@@ -27,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @Testcontainers // включает junit extension testcontainers, оно находит поля container и управляет их запуском/остановкой
 @ImportTestcontainers({PostgresTestContainer.class, RedisTestContainer.class}) // импортирует тестконтейнер из отдельного класса
+@Import(TestOAuth2ClientConfig.class)
 @ActiveProfiles("test")
 public class ItemQueryServiceTest {
 
@@ -43,6 +46,7 @@ public class ItemQueryServiceTest {
         databaseClient.sql("DELETE FROM cart_items").then().block();
         databaseClient.sql("DELETE FROM carts").then().block();
         databaseClient.sql("DELETE FROM items").then().block();
+        databaseClient.sql("DELETE FROM users").then().block();
         databaseClient.sql("""
                         INSERT INTO items(title, description, img_path, price, count)
                         VALUES ('1', '1', '1', 5, 1),

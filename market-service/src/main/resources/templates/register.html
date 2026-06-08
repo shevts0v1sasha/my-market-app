@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Регистрация</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="page">
+    <header class="header">
+        <h2 class="brand">Регистрация</h2>
+        <nav class="nav">
+            <a th:href="@{/items}">Витрина</a>
+            <a th:href="@{/login}">Вход</a>
+        </nav>
+    </header>
+
+    <div class="card single-card">
+        <p th:if="${error}" class="error" th:text="${error}"></p>
+
+        <form th:action="@{/register}" method="post" th:object="${form}">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <label>
+                Логин
+                <input type="text" th:field="*{username}" required/>
+            </label>
+            <label>
+                Пароль
+                <input type="password" th:field="*{password}" required minlength="4"/>
+            </label>
+            <button type="submit">Зарегистрироваться</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>

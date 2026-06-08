@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY gradlew gradlew.bat settings.gradle build.gradle ./
 COPY gradle gradle
+COPY auth-service auth-service
 COPY payment-api payment-api
 COPY market-service market-service
 COPY payment-service payment-service

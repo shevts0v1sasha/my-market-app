@@ -4,15 +4,21 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 import ru.yandex.marketapp.cart.application.usecase.AddCartItemUseCase;
+import ru.yandex.marketapp.config.ExceptionControllerAdvice;
+import ru.yandex.marketapp.config.PasswordEncoderConfig;
+import ru.yandex.marketapp.config.SecurityConfig;
 import ru.yandex.marketapp.item.infrastructure.service.query.ItemQueryService;
 
 import static org.mockito.Mockito.when;
 
 @WebFluxTest(ItemsRestController.class)
+@Import({SecurityConfig.class, PasswordEncoderConfig.class, ExceptionControllerAdvice.class})
 public class ItemsRestControllerTest {
 
     @MockitoBean
@@ -20,6 +26,9 @@ public class ItemsRestControllerTest {
 
     @MockitoBean
     private AddCartItemUseCase addCartItemUseCase;
+
+    @MockitoBean
+    private ru.yandex.marketapp.user.infrastructure.security.R2dbcUserDetailsService userDetailsService;
 
     @Autowired
     private WebTestClient webTestClient;
@@ -47,7 +56,9 @@ public class ItemsRestControllerTest {
             when(addCartItemUseCase.handle(1L, ru.yandex.marketapp.cart.application.usecase.ChangeCartItemAction.PLUS))
                     .thenReturn(Mono.empty());
 
-            webTestClient.post()
+            webTestClient.mutateWith(SecurityMockServerConfigurers.mockUser("user1"))
+                    .mutateWith(SecurityMockServerConfigurers.csrf())
+                    .post()
                     .uri(uriBuilder -> uriBuilder.path("/items/1")
                             .queryParam("action", "PLUS")
                             .queryParam("search", "")

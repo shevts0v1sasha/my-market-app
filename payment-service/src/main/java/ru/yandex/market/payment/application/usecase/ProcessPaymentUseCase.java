@@ -3,10 +3,9 @@ package ru.yandex.market.payment.application.usecase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-import ru.yandex.market.payment.domain.Money;
 import ru.yandex.market.payment.domain.Payment;
-import ru.yandex.market.payment.exception.IllegalMoneyException;
 import ru.yandex.market.payment.exception.ExceptionCode;
+import ru.yandex.market.payment.exception.IllegalMoneyException;
 import ru.yandex.market.payment.exception.PaymentAlreadyProcessedException;
 import ru.yandex.market.payment.repository.BalanceRepository;
 import ru.yandex.market.payment.repository.PaymentRepository;
@@ -19,7 +18,7 @@ public class ProcessPaymentUseCase {
     private final BalanceRepository balanceRepository;
 
     public Mono<Payment> handle(ProcessPaymentRequest request) {
-        return balanceRepository.getBalance()
+        return balanceRepository.getBalance(request.userId())
                 .flatMap(balance -> {
                     if (balance - request.money().amount() < 0) {
                         return Mono.error(new IllegalMoneyException(
@@ -46,7 +45,9 @@ public class ProcessPaymentUseCase {
                                             request.money()
                                     )
                                     .flatMap(payment ->
-                                            balanceRepository.decreaseBalance(payment.getMoney().amount())
+                                            balanceRepository.decreaseBalance(
+                                                            request.userId(),
+                                                            payment.getMoney().amount())
                                                     .thenReturn(payment)
                                     )));
                 });

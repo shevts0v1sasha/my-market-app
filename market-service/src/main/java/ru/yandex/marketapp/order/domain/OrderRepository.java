@@ -4,11 +4,12 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface OrderRepository {
-    Mono<Order> save(Order order);
 
-    Flux<Order> findAll();
+    Mono<Order> save(Order order, long userId);
 
-    Mono<Order> findById(long id);
+    Flux<Order> findAllByUserId(long userId);
+
+    Mono<Order> findByIdAndUserId(long id, long userId);
 
     Mono<Void> deleteById(long id);
 }

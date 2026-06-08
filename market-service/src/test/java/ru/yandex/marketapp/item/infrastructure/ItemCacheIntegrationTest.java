@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.context.ImportTestcontainers;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.test.context.ActiveProfiles;
@@ -12,6 +13,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.test.StepVerifier;
 import ru.yandex.marketapp.config.PostgresTestContainer;
 import ru.yandex.marketapp.config.RedisTestContainer;
+import ru.yandex.marketapp.config.TestOAuth2ClientConfig;
 import ru.yandex.marketapp.item.domain.ItemRepository;
 import ru.yandex.marketapp.item.domain.Sort;
 import ru.yandex.marketapp.item.infrastructure.api.dto.SearchItemsRequest;
@@ -23,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @Testcontainers
 @ImportTestcontainers({PostgresTestContainer.class, RedisTestContainer.class})
+@Import(TestOAuth2ClientConfig.class)
 @ActiveProfiles("test")
 class ItemCacheIntegrationTest {
 

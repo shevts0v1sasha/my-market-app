@@ -1,0 +1,24 @@
+apply plugin: 'org.springframework.boot'
+
+configurations {
+	configureEach {
+		exclude group: 'org.springframework.boot', module: 'spring-boot-starter-webflux'
+		exclude group: 'org.springframework.boot', module: 'spring-boot-starter-data-r2dbc'
+		exclude group: 'org.liquibase', module: 'liquibase-core'
+		exclude group: 'org.postgresql', module: 'postgresql'
+		exclude group: 'org.postgresql', module: 'r2dbc-postgresql'
+		exclude group: 'org.testcontainers', module: 'postgresql'
+		exclude group: 'org.testcontainers', module: 'r2dbc'
+	}
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-authorization-server'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+}
+
+bootJar {
+	archiveFileName = 'auth-service.jar'
+	mainClass = 'ru.yandex.market.auth.AuthServiceApplication'
+}

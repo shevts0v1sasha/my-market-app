@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="10" author="shevtsovdev">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="carts"/>
+                <not>
+                    <sequenceExists sequenceName="carts_id_seq"/>
+                </not>
+            </and>
+        </preConditions>
+
+        <createSequence sequenceName="carts_id_seq"/>
+        <sql splitStatements="false">
+            SELECT setval('carts_id_seq', COALESCE((SELECT MAX(id) FROM carts), 0) + 1, false);
+            ALTER TABLE carts ALTER COLUMN id SET DEFAULT nextval('carts_id_seq');
+            ALTER SEQUENCE carts_id_seq OWNED BY carts.id;
+        </sql>
+    </changeSet>
+</databaseChangeLog>

@@ -42,7 +42,7 @@ class PaymentGatewayTest {
                         {"balance": 500000}
                         """));
 
-        StepVerifier.create(paymentGateway.getBalanceKopecks())
+        StepVerifier.create(paymentGateway.getBalanceKopecks(1L))
                 .assertNext(balance -> assertThat(balance).isEqualTo(500_000L))
                 .verifyComplete();
     }
@@ -60,7 +60,7 @@ class PaymentGatewayTest {
                         }
                         """));
 
-        StepVerifier.create(paymentGateway.processPayment(10L, 100_000L))
+        StepVerifier.create(paymentGateway.processPayment(10L, 100_000L, 1L))
                 .verifyComplete();
     }
 }

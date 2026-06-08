@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 import ru.yandex.marketapp.cart.domain.CartRepository;
 import ru.yandex.marketapp.cart.infrastructure.api.dto.CartResponse;
+import ru.yandex.marketapp.config.CurrentUserService;
 import ru.yandex.marketapp.item.domain.ItemRepository;
 import ru.yandex.marketapp.item.infrastructure.api.dto.ItemDto;
 import ru.yandex.marketapp.item.infrastructure.mapper.ItemMapper;
@@ -21,29 +22,38 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class CartQueryService {
 
+    private final CurrentUserService currentUserService;
     private final CartRepository cartRepository;
     private final ItemRepository itemRepository;
     private final ItemMapper itemMapper;
     private final PaymentGateway paymentGateway;
 
+    @Transactional(readOnly = false)
     public Mono<CartResponse> getCurrentCart() {
-        return cartRepository.getCurrentCart()
-                .flatMap(cart -> {
-                    var countsByItemId = cart.getItems().stream()
-                            .collect(Collectors.toMap(i -> i.getItemId(), Function.identity(), (left, right) -> right));
-                    return itemRepository.findByIds(countsByItemId.keySet().stream().toList())
-                            .map(item -> itemMapper.map(item, countsByItemId.get(item.getId().id()).getAmount()))
-                            .collectList()
-                            .flatMap(items -> {
-                                long total = items.stream()
-                                        .mapToLong(item -> item.price() * item.count())
-                                        .sum();
-                                return enrichWithPaymentInfo(items, total);
-                            });
-                });
+        return currentUserService.requireUserId()
+                .flatMap(userId -> cartRepository.getCurrentCart()
+                        .flatMap(cart -> {
+                            var countsByItemId = cart.getItems().stream()
+                                    .collect(Collectors.toMap(
+                                            cartItem -> cartItem.getItemId(),
+                                            Function.identity(),
+                                            (left, right) -> right));
+                            return itemRepository.findByIds(countsByItemId.keySet().stream().toList())
+                                    .map(item -> itemMapper.map(
+                                            item,
+                                            countsByItemId.get(item.getId().id()).getAmount()))
+                                    .collectList()
+                                    .flatMap(items -> {
+                                        long total = items.stream()
+                                                .mapToLong(item -> item.price() * item.count())
+                                                .sum();
+                                        return enrichWithPaymentInfo(userId, items, total);
+                                    });
+                        }));
     }
 
     private Mono<CartResponse> enrichWithPaymentInfo(
+            long userId,
             List<ItemDto> items,
             long total
     ) {
@@ -51,7 +61,7 @@ public class CartQueryService {
             return Mono.just(new CartResponse(items, total, null, false, true, null));
         }
 
-        return paymentGateway.getBalanceKopecks()
+        return paymentGateway.getBalanceKopecks(userId)
                 .map(balanceKopecks -> buildCartResponse(items, total, balanceKopecks, true))
                 .onErrorResume(PaymentServiceUnavailableException.class,
                         error -> Mono.just(buildUnavailableCartResponse(items, total)));
