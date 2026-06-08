@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -13,6 +13,10 @@
         <nav class="nav">
             <a th:href="@{/items}">Витрина</a>
             <a th:href="@{/cart/items}">Корзина</a>
+            <form th:action="@{/logout}" method="post" class="inline-form">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <button type="submit">Выйти</button>
+            </form>
         </nav>
     </header>
 

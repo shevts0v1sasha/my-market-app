@@ -9,8 +9,8 @@ import ru.yandex.marketapp.order.domain.Order;
 import ru.yandex.marketapp.order.domain.OrderId;
 import ru.yandex.marketapp.order.domain.OrderItem;
 import ru.yandex.marketapp.order.domain.OrderRepository;
-import ru.yandex.marketapp.order.infrastructure.entity.OrderItemEntity;
 import ru.yandex.marketapp.order.infrastructure.entity.OrderEntity;
+import ru.yandex.marketapp.order.infrastructure.entity.OrderItemEntity;
 
 import java.util.List;
 
@@ -23,14 +23,13 @@ public class OrderR2dbcRepositoryAdapter implements OrderRepository {
 
     @Override
     @Transactional
-    public Mono<Order> save(Order order) {
-        OrderEntity entity = new OrderEntity();
-        entity.setTotalSum(order.totalSum());
+    public Mono<Order> save(Order order, long userId) {
+        OrderEntity entity = new OrderEntity(null, order.totalSum(), userId);
 
         return orderR2dbcRepository.save(entity)
                 .flatMap(savedOrder -> {
                     List<OrderItemEntity> items = order.items().stream()
-                            .map(item -> toJpa(item, savedOrder.getId()))
+                            .map(item -> toEntity(item, savedOrder.getId()))
                             .toList();
                     return orderItemR2dbcRepository.saveAll(items)
                             .collectList()
@@ -40,8 +39,8 @@ public class OrderR2dbcRepositoryAdapter implements OrderRepository {
 
     @Override
     @Transactional(readOnly = true)
-    public Flux<Order> findAll() {
-        return orderR2dbcRepository.findAll()
+    public Flux<Order> findAllByUserId(long userId) {
+        return orderR2dbcRepository.findAllByUserId(userId)
                 .collectList()
                 .filter(orders -> !orders.isEmpty())
                 .flatMapMany(orders -> {
@@ -63,8 +62,8 @@ public class OrderR2dbcRepositoryAdapter implements OrderRepository {
 
     @Override
     @Transactional(readOnly = true)
-    public Mono<Order> findById(long id) {
-        return orderR2dbcRepository.findById(id)
+    public Mono<Order> findByIdAndUserId(long id, long userId) {
+        return orderR2dbcRepository.findByIdAndUserId(id, userId)
                 .flatMap(order -> orderItemR2dbcRepository.findByOrderId(id)
                         .collectList()
                         .map(items -> toDomain(order, items)));
@@ -76,7 +75,7 @@ public class OrderR2dbcRepositoryAdapter implements OrderRepository {
         return orderR2dbcRepository.deleteById(id);
     }
 
-    private OrderItemEntity toJpa(OrderItem item, long orderId) {
+    private OrderItemEntity toEntity(OrderItem item, long orderId) {
         return new OrderItemEntity(
                 null,
                 item.itemId(),

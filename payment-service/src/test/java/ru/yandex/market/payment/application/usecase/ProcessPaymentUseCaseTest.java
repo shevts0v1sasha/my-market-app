@@ -18,6 +18,7 @@ import ru.yandex.market.payment.repository.PaymentRepository;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,28 +37,28 @@ class ProcessPaymentUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        when(balanceRepository.getBalance()).thenReturn(Mono.just(500_000L));
+        when(balanceRepository.getBalance(1L)).thenReturn(Mono.just(500_000L));
     }
 
     @Test
     void shouldProcessPaymentWhenBalanceIsEnough() {
-        ProcessPaymentRequest request = new ProcessPaymentRequest(1L, new Money(100_000L));
+        ProcessPaymentRequest request = new ProcessPaymentRequest(1L, 1L, new Money(100_000L));
         Payment payment = new Payment(new Money(100_000L), 1L);
 
         when(paymentRepository.findByOrderId(1L)).thenReturn(Mono.empty());
         when(paymentRepository.save(1L, request.money())).thenReturn(Mono.just(payment));
-        when(balanceRepository.decreaseBalance(100_000L)).thenReturn(Mono.just(400_000L));
+        when(balanceRepository.decreaseBalance(1L, 100_000L)).thenReturn(Mono.just(400_000L));
 
         StepVerifier.create(processPaymentUseCase.handle(request))
                 .expectNextMatches(result -> result.getOrderId().equals(1L))
                 .verifyComplete();
 
-        verify(balanceRepository).decreaseBalance(100_000L);
+        verify(balanceRepository).decreaseBalance(1L, 100_000L);
     }
 
     @Test
     void shouldFailWhenBalanceIsNotEnough() {
-        ProcessPaymentRequest request = new ProcessPaymentRequest(1L, new Money(600_000L));
+        ProcessPaymentRequest request = new ProcessPaymentRequest(1L, 1L, new Money(600_000L));
 
         StepVerifier.create(processPaymentUseCase.handle(request))
                 .expectErrorSatisfies(error -> {
@@ -72,7 +73,7 @@ class ProcessPaymentUseCaseTest {
 
     @Test
     void shouldFailWhenPaymentAlreadyProcessed() {
-        ProcessPaymentRequest request = new ProcessPaymentRequest(1L, new Money(100_000L));
+        ProcessPaymentRequest request = new ProcessPaymentRequest(1L, 1L, new Money(100_000L));
         Payment existing = new Payment(new Money(100_000L), 1L);
 
         when(paymentRepository.findByOrderId(1L)).thenReturn(Mono.just(existing));
@@ -81,6 +82,6 @@ class ProcessPaymentUseCaseTest {
                 .expectError(PaymentAlreadyProcessedException.class)
                 .verify();
 
-        verify(balanceRepository, never()).decreaseBalance(anyLong());
+        verify(balanceRepository, never()).decreaseBalance(anyLong(), anyLong());
     }
 }

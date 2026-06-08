@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="8" author="shevtsovdev">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="carts" columnName="user_id"/>
+            </not>
+        </preConditions>
+
+        <sql>DELETE FROM cart_items;</sql>
+        <sql>DELETE FROM carts;</sql>
+
+        <addColumn tableName="carts">
+            <column name="user_id" type="bigint">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_carts_user_id"/>
+            </column>
+        </addColumn>
+
+        <addForeignKeyConstraint baseTableName="carts"
+                                 baseColumnNames="user_id"
+                                 constraintName="fk_carts_user"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="9" author="shevtsovdev">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="shop_orders" columnName="user_id"/>
+            </not>
+        </preConditions>
+
+        <sql>DELETE FROM shop_order_items;</sql>
+        <sql>DELETE FROM shop_orders;</sql>
+
+        <addColumn tableName="shop_orders">
+            <column name="user_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <addForeignKeyConstraint baseTableName="shop_orders"
+                                 baseColumnNames="user_id"
+                                 constraintName="fk_shop_orders_user"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"/>
+
+        <createIndex tableName="shop_orders" indexName="idx_shop_orders_user_id">
+            <column name="user_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

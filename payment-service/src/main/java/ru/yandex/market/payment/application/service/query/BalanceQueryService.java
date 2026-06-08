@@ -12,8 +12,8 @@ public class BalanceQueryService {
 
     private final BalanceRepository balanceRepository;
 
-    public Mono<Money> getBalance() {
-        return balanceRepository.getBalance()
+    public Mono<Money> getBalance(long userId) {
+        return balanceRepository.getBalance(userId)
                 .map(Money::new);
     }
 }

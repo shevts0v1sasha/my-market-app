@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -28,13 +28,31 @@ services:
       timeout: 3s
       retries: 10
 
+  auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.auth
+    container_name: marketapp-auth
+    environment:
+      AUTH_SERVICE_ISSUER_URI: http://auth-service:9000
+      AUTH_SERVICE_CLIENT_ID: market-service
+      AUTH_SERVICE_CLIENT_SECRET: market-service-secret
+    ports:
+      - "9000:9000"
+    restart: unless-stopped
+
   payment-service:
     build:
       context: .
       dockerfile: Dockerfile.payment
     container_name: marketapp-payment
+    environment:
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://auth-service:9000
     ports:
       - "8081:8081"
+    depends_on:
+      auth-service:
+        condition: service_started
     restart: unless-stopped
 
   market-service:
@@ -43,6 +61,7 @@ services:
       dockerfile: Dockerfile.market
     container_name: marketapp-market
     environment:
+      SPRING_PROFILES_ACTIVE: docker
       SPRING_R2DBC_URL: r2dbc:postgresql://postgres:5432/postgres
       SPRING_R2DBC_USERNAME: postgres
       SPRING_R2DBC_PASSWORD: postgres
@@ -51,7 +70,6 @@ services:
       SPRING_LIQUIBASE_PASSWORD: postgres
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
-      PAYMENT_SERVICE_BASE_URL: http://payment-service:8081
     ports:
       - "8080:8080"
     depends_on:
@@ -59,6 +77,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      auth-service:
+        condition: service_started
       payment-service:
         condition: service_started
     restart: unless-stopped

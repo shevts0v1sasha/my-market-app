@@ -5,7 +5,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
 import ru.yandex.marketapp.cart.domain.Cart;
+import ru.yandex.marketapp.cart.domain.CartId;
 import ru.yandex.marketapp.cart.domain.CartRepository;
+import ru.yandex.marketapp.config.CurrentUserService;
 import ru.yandex.marketapp.item.domain.Item;
 import ru.yandex.marketapp.item.domain.ItemRepository;
 import ru.yandex.marketapp.item.domain.ItemsPage;
@@ -24,18 +26,19 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ItemQueryService {
 
+    private final CurrentUserService currentUserService;
     private final CartRepository cartRepository;
     private final ItemMapper itemMapper;
     private final ItemRepository itemRepository;
 
     public Mono<SearchItemsResponse> find(SearchItemsRequest request) {
-        Mono<Cart> cart = cartRepository.getCurrentCart();
+        Mono<Cart> cart = currentCartOrEmpty();
         Mono<ItemsPage> itemsPage = itemRepository.find(new ItemsSearchContext(
-                        request.getSearch(),
-                        request.getPageNumber(),
-                        request.getPageSize(),
-                        request.getSort())
-                );
+                request.getSearch(),
+                request.getPageNumber(),
+                request.getPageSize(),
+                request.getSort())
+        );
 
         return Mono.zip(itemsPage, cart)
                 .map(result -> {
@@ -46,12 +49,19 @@ public class ItemQueryService {
     }
 
     public Mono<ItemDto> findById(long id) {
-        return Mono.zip(itemRepository.findById(id), cartRepository.getCurrentCart())
+        return Mono.zip(itemRepository.findById(id), currentCartOrEmpty())
                 .map(result -> {
                     Item item = result.getT1();
                     Cart cart = result.getT2();
                     return itemMapper.map(item, cart.countFor(item.getId().id()));
                 });
+    }
+
+    private Mono<Cart> currentCartOrEmpty() {
+        return currentUserService.isAuthenticated()
+                .flatMap(authenticated -> authenticated
+                        ? cartRepository.findCurrentCart()
+                        : Mono.just(new Cart(new CartId(0L), List.of())));
     }
 
     private List<List<ItemDto>> split(List<Item> items, Cart cart) {

@@ -1,4 +1,5 @@
 rootProject.name = 'my-market-app'
+include 'auth-service'
 include 'payment-service'
 include 'payment-api'
 include 'market-service'

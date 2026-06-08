@@ -22,8 +22,8 @@ public class PaymentV1RestController implements PaymentsApi {
     private final BalanceQueryService balanceQueryService;
 
     @Override
-    public Mono<ResponseEntity<BalanceResponse>> getBalance(ServerWebExchange exchange) {
-        return balanceQueryService.getBalance()
+    public Mono<ResponseEntity<BalanceResponse>> getBalance(Long userId, ServerWebExchange exchange) {
+        return balanceQueryService.getBalance(userId)
                 .map(money -> ResponseEntity.ok(new BalanceResponse(money.amount())));
     }
 
@@ -32,7 +32,9 @@ public class PaymentV1RestController implements PaymentsApi {
                                                                 ServerWebExchange exchange) {
         return paymentRequest
                 .flatMap(r -> processPaymentUseCase.handle(
-                        new ProcessPaymentRequest(r.getOrderId(),
+                        new ProcessPaymentRequest(
+                                r.getOrderId(),
+                                r.getUserId(),
                                 new Money(r.getAmount()))
                 ))
                 .map(p -> ResponseEntity.ok(

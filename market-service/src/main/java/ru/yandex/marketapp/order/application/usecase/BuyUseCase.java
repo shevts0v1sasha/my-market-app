@@ -9,6 +9,7 @@ import ru.yandex.marketapp.cart.domain.CartItem;
 import ru.yandex.marketapp.cart.domain.CartRepository;
 import ru.yandex.marketapp.common.application.BusinessRuleException;
 import ru.yandex.marketapp.common.application.NotFoundException;
+import ru.yandex.marketapp.config.CurrentUserService;
 import ru.yandex.marketapp.item.domain.ItemRepository;
 import ru.yandex.marketapp.order.domain.Order;
 import ru.yandex.marketapp.order.domain.OrderItem;
@@ -22,6 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BuyUseCase {
 
+    private final CurrentUserService currentUserService;
     private final CartRepository cartRepository;
     private final ItemRepository itemRepository;
     private final OrderRepository orderRepository;
@@ -29,29 +31,32 @@ public class BuyUseCase {
 
     @Transactional
     public Mono<Long> handle() {
-        return cartRepository.getCurrentCart()
-                .flatMap(cart -> {
-                    if (cart.isEmpty()) {
-                        return Mono.error(new BusinessRuleException("Cart is empty"));
-                    }
-                    List<Long> itemIds = cart.getItems().stream()
-                            .map(CartItem::getItemId)
-                            .toList();
-
-                    return itemRepository.findByIds(itemIds)
-                            .map(item -> new OrderItem(
-                                    item.getId().id(),
-                                    item.getTitle(),
-                                    item.getPrice().price(),
-                                    cart.countFor(item.getId().id())
-                            ))
-                            .filter(item -> item.count() > 0)
-                            .collectList()
-                            .flatMap(orderItems -> createOrderPayAndClearCart(cart, orderItems));
-                });
+        return currentUserService.requireUserId()
+                .flatMap(userId -> cartRepository.getCurrentCart()
+                        .flatMap(cart -> processCart(userId, cart)));
     }
 
-    private Mono<Long> createOrderPayAndClearCart(Cart cart, List<OrderItem> orderItems) {
+    private Mono<Long> processCart(long userId, Cart cart) {
+        if (cart.isEmpty()) {
+            return Mono.error(new BusinessRuleException("Cart is empty"));
+        }
+        List<Long> itemIds = cart.getItems().stream()
+                .map(CartItem::getItemId)
+                .toList();
+
+        return itemRepository.findByIds(itemIds)
+                .map(item -> new OrderItem(
+                        item.getId().id(),
+                        item.getTitle(),
+                        item.getPrice().price(),
+                        cart.countFor(item.getId().id())
+                ))
+                .filter(item -> item.count() > 0)
+                .collectList()
+                .flatMap(orderItems -> createOrderPayAndClearCart(userId, cart, orderItems));
+    }
+
+    private Mono<Long> createOrderPayAndClearCart(long userId, Cart cart, List<OrderItem> orderItems) {
         if (orderItems.isEmpty()) {
             return Mono.error(new NotFoundException("No items from cart were found in catalog"));
         }
@@ -59,8 +64,8 @@ public class BuyUseCase {
         Order order = Order.create(orderItems);
         long totalKopecks = order.totalSum() * 100;
 
-        return orderRepository.save(order)
-                .flatMap(created -> paymentGateway.processPayment(created.id().id(), totalKopecks)
+        return orderRepository.save(order, userId)
+                .flatMap(created -> paymentGateway.processPayment(created.id().id(), totalKopecks, userId)
                         .thenReturn(created)
                         .onErrorResume(PaymentException.class, error ->
                                 orderRepository.deleteById(created.id().id()).then(Mono.error(error)))

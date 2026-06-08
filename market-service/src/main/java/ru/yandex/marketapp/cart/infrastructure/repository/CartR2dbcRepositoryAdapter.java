@@ -1,7 +1,6 @@
 package ru.yandex.marketapp.cart.infrastructure.repository;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
@@ -9,8 +8,9 @@ import ru.yandex.marketapp.cart.domain.Cart;
 import ru.yandex.marketapp.cart.domain.CartId;
 import ru.yandex.marketapp.cart.domain.CartItem;
 import ru.yandex.marketapp.cart.domain.CartRepository;
-import ru.yandex.marketapp.cart.infrastructure.entity.CartItemEntity;
 import ru.yandex.marketapp.cart.infrastructure.entity.CartEntity;
+import ru.yandex.marketapp.cart.infrastructure.entity.CartItemEntity;
+import ru.yandex.marketapp.config.CurrentUserService;
 
 import java.util.List;
 
@@ -18,46 +18,60 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CartR2dbcRepositoryAdapter implements CartRepository {
 
-    private static final long CURRENT_CART_ID = 1L;
-
     private final CartR2dbcRepository cartR2dbcRepository;
     private final CartItemR2dbcRepository cartItemR2dbcRepository;
-    private final DatabaseClient databaseClient;
+    private final CurrentUserService currentUserService;
 
     @Override
     @Transactional(readOnly = true)
+    public Mono<Cart> findCurrentCart() {
+        return currentUserService.requireUserId()
+                .flatMap(this::loadCartByUserId)
+                .defaultIfEmpty(emptyCart());
+    }
+
+    @Override
+    @Transactional
     public Mono<Cart> getCurrentCart() {
-        return cartR2dbcRepository.findById(CURRENT_CART_ID)
-                .flatMap(entity -> cartItemR2dbcRepository.findByCartId(entity.getId())
-                        .map(i -> new CartItem(i.getItemId(), i.getAmount()))
-                        .collectList()
-                        .map(items -> new Cart(new CartId(entity.getId()), items)))
-                .switchIfEmpty(Mono.just(new Cart(new CartId(CURRENT_CART_ID), List.of())));
+        return currentUserService.requireUserId()
+                .flatMap(userId -> loadCartByUserId(userId)
+                        .switchIfEmpty(createCart(userId)));
     }
 
     @Override
     @Transactional
     public Mono<Cart> save(Cart cart) {
-        CartEntity entity = new CartEntity(CURRENT_CART_ID);
-        List<CartItemEntity> items = cart.getItems().stream()
-                .map(this::toJpa)
-                .toList();
-        items.forEach(i -> i.setCartId(CURRENT_CART_ID));
+        return currentUserService.requireUserId()
+                .flatMap(userId -> {
+                    List<CartItemEntity> items = cart.getItems().stream()
+                            .map(item -> toEntity(item, cart.getId().id()))
+                            .toList();
 
-        return databaseClient.sql("INSERT INTO carts(id) VALUES(:id) ON CONFLICT (id) DO NOTHING")
-                .bind("id", entity.getId())
-                .then()
-                .then(cartItemR2dbcRepository.deleteByCartId(CURRENT_CART_ID))
-                .thenMany(cartItemR2dbcRepository.saveAll(items))
-                .then(Mono.just(cart));
+                    return cartItemR2dbcRepository.deleteByCartId(cart.getId().id())
+                            .thenMany(cartItemR2dbcRepository.saveAll(items))
+                            .then(Mono.just(cart));
+                });
     }
 
-    private CartItemEntity toJpa(CartItem item) {
-        return new CartItemEntity(
-                null,
-                item.getItemId(),
-                item.getAmount(),
-                CURRENT_CART_ID
-        );
+    private Mono<Cart> loadCartByUserId(long userId) {
+        return cartR2dbcRepository.findByUserId(userId)
+                .flatMap(entity -> cartItemR2dbcRepository.findByCartId(entity.getId())
+                        .map(item -> new CartItem(item.getItemId(), item.getAmount()))
+                        .collectList()
+                        .map(items -> new Cart(new CartId(entity.getId()), items)));
+    }
+
+    private Cart emptyCart() {
+        return new Cart(new CartId(0L), List.of());
+    }
+
+    private Mono<Cart> createCart(long userId) {
+        CartEntity entity = new CartEntity(null, userId);
+        return cartR2dbcRepository.save(entity)
+                .map(saved -> new Cart(new CartId(saved.getId()), List.of()));
+    }
+
+    private CartItemEntity toEntity(CartItem item, long cartId) {
+        return new CartItemEntity(null, item.getItemId(), item.getAmount(), cartId);
     }
 }

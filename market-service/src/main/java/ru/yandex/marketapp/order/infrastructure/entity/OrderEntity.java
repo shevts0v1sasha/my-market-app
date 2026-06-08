@@ -20,4 +20,7 @@ public class OrderEntity {
 
     @Column("total_sum")
     private long totalSum;
+
+    @Column("user_id")
+    private Long userId;
 }
