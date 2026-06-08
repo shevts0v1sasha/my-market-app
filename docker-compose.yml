@@ -17,11 +17,31 @@ services:
       retries: 10
       start_period: 5s
 
-  app:
+  redis:
+    image: redis:7-alpine
+    container_name: marketapp-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  payment-service:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: marketapp-app
+      dockerfile: Dockerfile.payment
+    container_name: marketapp-payment
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+
+  market-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.market
+    container_name: marketapp-market
     environment:
       SPRING_R2DBC_URL: r2dbc:postgresql://postgres:5432/postgres
       SPRING_R2DBC_USERNAME: postgres
@@ -29,11 +49,18 @@ services:
       SPRING_LIQUIBASE_URL: jdbc:postgresql://postgres:5432/postgres
       SPRING_LIQUIBASE_USER: postgres
       SPRING_LIQUIBASE_PASSWORD: postgres
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      PAYMENT_SERVICE_BASE_URL: http://payment-service:8081
     ports:
       - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+      payment-service:
+        condition: service_started
     restart: unless-stopped
 
 volumes:

@@ -1,0 +1,47 @@
+plugins {
+    id "org.openapi.generator" version "7.12.0"
+}
+
+apply plugin: 'org.springframework.boot'
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.28'
+    implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
+    testImplementation 'com.squareup.okhttp3:mockwebserver:4.12.0'
+}
+
+openApiGenerate {
+    generatorName = "java"
+    library = "webclient"
+
+    inputSpec = file("$rootDir/payment-api/src/main/resources/openapi/openapi.yaml")
+            .toURI()
+            .toString()
+    outputDir = "$buildDir/generated/openapi"
+
+    apiPackage = "ru.yandex.market.payment.client.api"
+    modelPackage = "ru.yandex.market.payment.client.model"
+    invokerPackage = "ru.yandex.market.payment.client.invoker"
+
+    configOptions = [
+            dateLibrary: "java8",
+            useJakartaEe: "true",
+            useTags: "true"
+    ]
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir "$buildDir/generated/openapi/src/main/java"
+        }
+    }
+}
+
+compileJava.dependsOn tasks.openApiGenerate
+
+bootJar {
+    archiveFileName = 'market-service.jar'
+}

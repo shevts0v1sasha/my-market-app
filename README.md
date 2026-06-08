@@ -1,9 +1,27 @@
 # Магазин кошек
 
-## Реализация
-Попытался реализовать проект с применением Domain Driven Design
+Интернет магазин на Spring Boot с мультимодульной структурой:
+- market-service - витрина, корзина, заказы (порт 8080)
+- payment-service - REST сервис платежей (порт 8081)
+- payment-api - OpenAPI контракт
+
+## Сборка
+
+```bash
+./gradlew clean build
+```
+
+## Тесты
+
+```bash
+./gradlew test
+```
 
 ## Запуск
 
-1. Сбор jar: `./gradlew bootJar`
-2. Запуск docker-compose: `docker compose up --build`
+```bash
+docker compose up --build
+```
+
+- Витрина: http://localhost:8080
+- Payment API: http://localhost:8081
